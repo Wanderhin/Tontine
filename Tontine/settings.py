@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'Tontine.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'tontine',
+        'NAME': 'tontines',
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',
@@ -111,19 +111,23 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-fr'
 
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
 USE_TZ = True
-AUTH_USER_MODEL = "Backend.Membre"
+AUTH_USER_MODEL = "Backend.Utilisateur"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR/'mediafiles'
+LOGIN_REDIRECT_URL = 'Backend:home'
+LOGOUT_REDIRECT_URL = "Backend:login"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

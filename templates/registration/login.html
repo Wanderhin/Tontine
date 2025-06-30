@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titre %}
+    <title>Tontine</title>
+    <link rel="stylesheet" href="{% static 'login.css' %}">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .login-container {
+      min-height: 300px;
+        box-shadow: 2px 8px 15px  rgba(0,0,0,.5);
+        border-radius: 15px;
+    }
+    .left-panel {
+      background-color: white;
+      padding: 60px 40px;
+        border-radius : 15px;
+    }
+    .right-panel {
+      background: linear-gradient(to top right, #a18cd1, #fbc2eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+        border-radius: 15px;
+    }
+    .illustration {
+      max-width: 100%;
+      height: auto;
+    }
+    .form-control {
+      border-radius: 8px;
+    }
+    .btn-primary {
+      background-color: #7b2cbf;
+      border-color: #7b2cbf;
+      border-radius: 8px;
+    }
+    .btn-primary:hover {
+      background-color: #5a189a;
+    }
+    .form-check-input:checked {
+      background-color: #7b2cbf;
+      border-color: #7b2cbf;
+    }
+    .small-link {
+      font-size: 0.875rem;
+    }
+  </style>
+
+{% endblock %}
+
+{% block contenu %}
+    
+    
+
+       
+ <div style="width: 800px; height: 100px;  position: relative; margin: 0 auto; top: 120px">  
+<div class="container-fluid login-container d-flex">
+  <div class="row flex-grow-1 w-100">
+     
+    <div class="col-md-6 left-panel d-flex flex-column justify-content-center">
+         <img src="{{ a.logo.url }}" alt="" style="border-radius: 50px; width: 100px; height: 100px">
+      <div class="w-100" style="max-width: 400px; margin: auto;">
+        <h5 class="text-primary fw-bold mb-3">Ma Tontine {{ a.nom }}</h5>
+        <h2 class="fw-bold mb-3">{{ a.slogan }}</h2>
+        <p class="text-muted mb-4">Salut, bon retour dans ton espace personnel</p>
+
+        <form method="post">
+            {% csrf_token %}
+          <div class="mb-3">
+            <input type="text" class="form-control" placeholder="entre votre nom d'utilisateur" name="username" required />
+          </div>
+          <div class="mb-3">
+            <input type="password" class="form-control" placeholder="entrer votre mot de passe" name="password" required />
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="rememberMe" checked>
+              <label class="form-check-label small-link" for="rememberMe">se rappeller de moi</label>
+            </div>
+            <a href="#" class="text-decoration-none small-link">mot de passe oublier ?</a>
+          </div>
+          <div class="mb-4">
+            <button type="submit" class="btn btn-primary w-100">connectez-vous</button>
+          </div>
+        </form>
+        
+       
+      </div>
+    </div>
+      
+    <div class="col-md-6 right-panel ">
+        <img src="{% static 'login.png' %}" alt="" style="width: 400px; height: 575px; border-radius: 15px; margin:0px" >
+    </div>
+  </div>
+</div>
+ {% if form.errors %}
+    <div class="alert alert-danger">
+      <ul style=" list-style-type: none;" >
+        {% for field, errors in form.errors.items %}
+          {% for error in errors %}
+            <li >{{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</div> 
+{% endblock %}
+

@@ -1,16 +1,15 @@
 {% extends 'accueil.html' %}
 {% block accueil %}
                         <a class="nav-link" href="{% url 'Backend:home' %}">
-                            <i class="fas fa-home"></i> 
+                            <i class="fas fa-home"></i>
                             Accueil
                         </a>
    {% endblock %}
 
 {% block remplir %}
 
-    <form action="" class="form-class" method="post">
-    {% csrf_token %}
-    
+
+
 
 <div class="container mt-5">
     <div class="card shadow-lg rounded-4 border-0">
@@ -18,31 +17,9 @@
             <h4 class="mb-0 text-center">Modification Association</h4>
         </div>
         <div class="card-body p-4">
-            <form method="POST" enctype="multipart/form-data">
-                <!-- Nom -->
-                <div class="mb-3">
-                    <input type="text" class="form-control form-control-lg" name="nom" value="{{ a.nom }}">
-                </div>
-
-                <!-- Slogan -->
-                <div class="mb-3">
-                    <input type="text" class="form-control form-control-lg" name="slogan" value="{{ a.slogan }}">
-                </div>
-
-                <!-- Description -->
-                <div class="mb-3">
-                    <textarea class="form-control form-control-lg" name="description" rows="3">{{ a.description }}</textarea>
-                </div>
-
-                <!-- Date de création -->
-                <div class="mb-3">
-                    <input type="date" class="form-control form-control-lg" name="dateCreation" value="{{ a.dateCreation }}">
-                </div>
-
-                                <!-- Upload logo -->
-                <div class="mb-4">
-                    <input class="form-control form-control-lg" type="file" name="Modification : ">
-                </div>
+            <form method="post" enctype="multipart/form-data">
+               {% csrf_token %}
+                {{ form.as_p }}
 
                 <!-- Bouton -->
                 <div class="d-grid">
@@ -53,7 +30,7 @@
     </div>
 </div>
 
-    
-    </form>
+
+
 
 {% endblock %}

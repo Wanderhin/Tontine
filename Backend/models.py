@@ -12,7 +12,7 @@ class Association(models.Model):
     logo = models.ImageField(upload_to="logoAssociation")
 
     def save(self, *args, **kwargs):
-        self.dateCreation = datetime.today().date()
+        #self.dateCreation = datetime.today().date()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -58,18 +58,22 @@ class RoleUser(models.Model):
         return RoleUserForm(instance=self)
 
     class Meta:
-        verbose_name = "Role des Utilisateurs"
+        verbose_name = "Role des Utilisateur"
 
 
 class RoleMembre(models.Model):
-    role = models.CharField(max_length=30)
+    role = models.CharField(max_length=30, unique=True)
     description = models.TextField(blank=True)
+
+    def get_update_form(self):
+        from Backend.formulaire import RoleMembreForm
+        return RoleMembreForm(instance=self)
 
     def __str__(self):
         return self.role
 
     class Meta:
-        verbose_name = "Role des Membres"
+        verbose_name = "Role des Membre"
 
 
 class Membre(models.Model):
@@ -79,6 +83,10 @@ class Membre(models.Model):
     telephone = models.CharField(max_length=15)
     sexe = models.CharField(max_length=10)
     role = models.ForeignKey(RoleMembre, on_delete=models.SET_NULL, null=True)
+
+    def get_update_form(self):
+        from Backend.formulaire import MembreForm
+        return MembreForm(instance=self)
 
     def __str__(self):
         return "{} {}".format(self.nom, self.prenom)

@@ -48,19 +48,21 @@ class CreateMembre(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         a = Association.objects.first()
+        membres = Membre.objects.all()
         context["a"] = a
+        context["membres"] = membres
         return context
 
 
-@method_decorator(permission_requise("creer membre"), name='dispatch')
+@method_decorator(permission_requise("creer role membre"), name='dispatch')
 class CreateRoleMembre(CreateView):
     model = RoleMembre
-    form_class = MembreForm
-    template_name = "admin/CreationMembre.html"
-    success_url = reverse_lazy("Backend:createMembre")
+    form_class = RoleMembreForm
+    template_name = "admin/roleMembre/index.html"
+    success_url = reverse_lazy("Backend:CreateRoleMembre")
 
     def form_valid(self, form):
-        messages.success(self.request, "Le membre a été créée avec succès !")
+        messages.success(self.request, "Le role a été créée avec succès !")
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -72,8 +74,55 @@ class CreateRoleMembre(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         a = Association.objects.first()
+        role = RoleMembre.objects.all()
         context["a"] = a
+        context["roles"] = role
         return context
+
+
+@method_decorator(permission_requise("supprimer role membre"), name='dispatch')
+class Supprimer_role_membre(DeleteView):
+    model = RoleMembre
+    template_name = 'admin/roleMembre/index.html'
+    success_url = reverse_lazy('Backend:CreateRoleMembre')
+
+    def form_valid(self, form):
+        messages.success(self.request, "suppression effectuée avec succès !")
+        return super().form_valid(form)
+
+
+@method_decorator(permission_requise("modifier role membre"), name='dispatch')
+class ModifierRoleMembre(UpdateView):
+    template_name = "admin/roleMembre/form_partial.html"
+    model = RoleMembre
+    form_class = RoleMembreForm
+    success_url = reverse_lazy("Backend:CreateRoleMembre")
+
+    def form_valid(self, form):
+        messages.success(self.request, "Modification effectuée avec succès !")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(self.request, f"{field.capitalize()}: {error}")
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        a = Association.objects.first()
+
+        context["a"] = a
+
+        return context
+
+
+@method_decorator(permission_requise("modifier membre"), name='dispatch')
+class ModifierMembre(ModifierRoleMembre):
+    template_name = "admin/membre_update.html"
+    model = Membre
+    form_class = MembreForm
+    success_url = reverse_lazy("Backend:createMembre")
 
 
 class CustomLoginView(LoginView):
@@ -90,7 +139,6 @@ class ParamettrageAssociation(UpdateView):
     template_name = "admin/modificationAssociation.html"
     model = Association
     form_class = AssociationForm
-    context_object_name = "association"
     success_url = reverse_lazy("Backend:home")
 
     def form_valid(self, form):
@@ -139,6 +187,13 @@ class Supprimer_role(DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "suppression effectuée avec succès !")
         return super().form_valid(form)
+
+
+@method_decorator(permission_requise("supprimer membre"), name='dispatch')
+class Supprimer_membre(Supprimer_role):
+    model = Membre
+    template_name = 'admin/CreationMembre.html'
+    success_url = reverse_lazy('Backend:createMembre')
 
 
 @method_decorator(permission_requise("modifier role utilisateur"), name='dispatch')
@@ -191,15 +246,9 @@ class AjouterUtilisateur(CreateView):
         utilisateur = Utilisateur.objects.all()
 
         context["a"] = a
-        context["utilisateurs"]= utilisateur
+        context["utilisateurs"] = utilisateur
 
         return context
-
-    def form_invalid(self, form):
-        for field, errors in form.errors.items():
-            for error in errors:
-                messages.error(self.request, f"{field.capitalize()}: {error}")
-        return super().form_invalid(form)
 
 
 @method_decorator(permission_requise("ajouter utilisateur"), name='dispatch')
@@ -243,3 +292,9 @@ class ModifierUser(UpdateView):
         context["a"] = a
 
         return context
+
+
+def retournerMembre(request):
+    membre = Membre.objects.all()
+
+    return render(request, 'admin/liste_membre.html', context={'membres': membre})

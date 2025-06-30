@@ -18,7 +18,7 @@
 {% block remplir %}
 
      <div style="position: relative; left: 250px;top: -20px; width: 800px; height: 750px; border-radius:10px; box-shadow: 5px 8px 30px rgba(0,0,0,.3); padding: 20px">
-       <div class="card-header bg-primary text-white rounded-top-4 p-1">
+       <div class="card-header  text-dark rounded-top-4 p-1">
             <h4 class="mb-0 text-center">Ajouter un Utilisateur</h4>
         </div>
         <br>
@@ -74,10 +74,10 @@
                             {{u.email }}
                         </div>
                     <div class="role-description">
-                        {% if u.membe == None %}
+                        {% if  u.membre == None %}
                             cet utilisateur n'est relier a aucun membre
                             {% else %}
-                            {{u.membre }}
+                            {{u.membre}}
                             
                         {% endif %}
                         </div>

@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="{% static 'accueil.css' %}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
-       
+
     </style>
 </head>
 <body>
@@ -21,7 +21,7 @@
         {% la_permission "modification association" as droit_modif_asso %}
         {% la_permission "ajouter role utilisateur" as droit_ajouter_role_user %}
         {% la_permission "admin" as droit_admin_user %}
-        
+
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
@@ -29,24 +29,24 @@
                     {{ a.nom }}
                 </div>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <ul class="nav flex-column">
                     <li class="nav-item">
                         {% block accueil %}
                         <a class="nav-link active" href="{% url 'Backend:home' %}">
-                            <i class="fas fa-home"></i> 
+                            <i class="fas fa-home"></i>
                             Accueil
                         </a>
                         {% endblock %}
                     </li>
-                    
+
                     {% if droit_ajouter_role_user %}
                     <li class="nav-item">
                         {% block Utilisateur %}
                         <a class="nav-link" data-bs-toggle="collapse" href="#submenuUser" role="button" aria-expanded="false" aria-controls="submenuUser">
-                            <i class="fas fa-user"></i> 
-                            Utilisateur 
+                            <i class="fas fa-user"></i>
+                            Utilisateur
                             <i class="fas fa-caret-down ms-auto"></i>
                         </a>
                         {% endblock %}
@@ -78,15 +78,15 @@
                     <li class="nav-item">
                         {% block participants %}
                         <a class="nav-link" data-bs-toggle="collapse" href="#submenuParticipants" role="button" aria-expanded="false" aria-controls="submenuParticipants">
-                            <i class="fas fa-users"></i> 
-                            Participants 
+                            <i class="fas fa-users"></i>
+                            Participants
                             <i class="fas fa-caret-down ms-auto"></i>
                         </a>
                         {% endblock %}
                         <div class="collapse" id="submenuParticipants">
                             <ul class="nav flex-column submenu">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="">
+                                    <a class="nav-link" href="{% url 'Backend:liste_membre' %}">
                                         <i class="fas fa-list"></i>
                                         Liste des membres
                                     </a>
@@ -98,8 +98,8 @@
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">
-                                        <i class="fas fa-envelope"></i>
+                                    <a class="nav-link" href="{% url 'Backend:CreateRoleMembre' %}">
+                                        <i class="fas fa-pencil"></i>
                                         Gerer les Roles
                                     </a>
                                 </li>
@@ -109,46 +109,46 @@
 
                     <li class="nav-item">
                         <a class="nav-link" href="#">
-                            <i class="fas fa-hand-holding-usd"></i> 
+                            <i class="fas fa-hand-holding-usd"></i>
                             Cotisations
                         </a>
                     </li>
-                    
+
                     <li class="nav-item">
                         <a class="nav-link" href="#">
-                            <i class="fas fa-random"></i> 
+                            <i class="fas fa-random"></i>
                             Tirage
                         </a>
                     </li>
-                    
+
                     <li class="nav-item">
                         <a class="nav-link" href="#">
-                            <i class="fas fa-chart-line"></i> 
+                            <i class="fas fa-chart-line"></i>
                             Statistiques
                         </a>
                     </li>
-                    
+
                     <li class="nav-item">
                         <hr style="border-color: rgba(0,0,0,0.1); margin: 1rem 0;">
                     </li>
-                    
+
                     <li class="nav-item">
                         <a class="nav-link" href="#">
-                            <i class="fas fa-cog"></i> 
+                            <i class="fas fa-cog"></i>
                             Paramètres
                         </a>
                     </li>
-                    
+
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'Backend:logout' %}">
-                            <i class="fas fa-sign-out-alt"></i> 
+                            <i class="fas fa-sign-out-alt"></i>
                             Déconnexion
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a class="nav-link" href="/admin">
-                            <i class="fas fa-user-shield"></i> 
+                            <i class="fas fa-user-shield"></i>
                             Super Admin
                         </a>
                     </li>
@@ -167,7 +167,7 @@
                     <h5 class="mb-0">Tableau de bord</h5>
                     {% endblock %}
                 </div>
-                
+
                 <div class="user-info">
                     <div class="user-avatar">
                         <img src="{{ user.photo.url }}" alt="Avatar">
@@ -184,11 +184,11 @@
             {% if messages %}
             <div class="notification-container">
                 {% for message in messages %}
-                <div class="alert 
+                <div class="alert
                     {% if message.tags == 'success' %}alert-success
                     {% elif message.tags == 'warning' %}alert-warning
                     {% elif message.tags == 'error' %}alert-danger
-                    {% else %}alert-info{% endif %}" 
+                    {% else %}alert-info{% endif %}"
                     role="alert" id="notification-{{ forloop.counter }}">
                     {{ message }}
                 </div>
@@ -228,9 +228,9 @@
                                             Fondée le {{ a.dateCreation }}
                                         </div>
                                     </div>
-                                    
+
                                     <p class="association-description">{{ a.description }}</p>
-                                    
+
                                     <div class="stats-container">
                                         <div class="stat-item">
                                             <i class="fas fa-users"></i>
@@ -245,16 +245,16 @@
                                         </div>
                                         {% endif %}
                                     </div>
-                                
-                                    
+
+
                                     <blockquote class="association-quote">
                                         <i class="fas fa-quote-left quote-icon"></i>
                                         <p class="quote-text">{{ a.slogan }}</p>
                                     </blockquote>
-                                    
-                                    
+
+
                                 </div>
-                            
+
                             </div>
                         </div>
                     </div>
@@ -298,9 +298,9 @@
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             const toggle = document.querySelector('.mobile-menu-toggle');
-            
-            if (window.innerWidth <= 768 && 
-                !sidebar.contains(event.target) && 
+
+            if (window.innerWidth <= 768 &&
+                !sidebar.contains(event.target) &&
                 !toggle.contains(event.target)) {
                 sidebar.classList.remove('show');
             }

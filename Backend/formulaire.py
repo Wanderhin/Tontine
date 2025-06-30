@@ -8,6 +8,7 @@ tirage = (("aleatoire", "aleatoire"), ("manuellement", "manuellement"))
 
 class MembreForm(forms.ModelForm):
     sexe = forms.ChoiceField(choices=sexes)
+
     class Meta:
         model = Membre
 
@@ -22,7 +23,7 @@ class MembreForm(forms.ModelForm):
 class AssociationForm(forms.ModelForm):
     class Meta:
         model = Association
-        fields = "__all__"
+        fields = ['nom', 'slogan', 'description', 'logo', 'dateCreation']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,7 +67,7 @@ class UserActifForm(forms.ModelForm):
                 field.widget.attrs.update({'class': 'form-control'})
 
 
-class RoleMembreForm(UserCreationForm):
+class RoleMembreForm(forms.ModelForm):
     class Meta:
         model = RoleMembre
         fields = ['role', 'description', ]

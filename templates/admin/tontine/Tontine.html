@@ -1,13 +1,8 @@
 {% extends 'accueil.html' %}
  {% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
-{% block participants %}
-    
-<a class="nav-link active" data-bs-toggle="collapse" href="#submenuParticipants" role="button" aria-expanded="false" aria-controls="submenuParticipants">
-    <i class="fas fa-users"></i> Membres <i class="fas fa-caret-down float-end"></i></a>
-    
-{% endblock %}
+
 {% block entete %}
-                    <h5 class="mb-0">Gerer les membres</h5>
+                    <h5 class="mb-0">Gerer les Tontines</h5>
                     {% endblock %}
 <div style="width: 30px; height: 60px; position: relative; right: 20px; top: 15px">
     {% if messages %}
@@ -29,11 +24,16 @@
     </div>
 {% endif %}
 </div>
-
+{% block tontine %}
+                        <a class="nav-link active" href="{% url 'Backend:CreateTontine' %}">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Tontines
+                        </a>
+                        {% endblock %}
 {% block remplir %}
-       <div style="position: relative; left: 300px;top: -10px; width: 700px; height: 600px; border-radius:10px; box-shadow: 5px 8px 30px rgba(0,0,0,.3); padding: 20px">
+       <div style="position: relative; margin: auto 0; border-radius:10px; box-shadow: 5px 8px 30px rgba(0,0,0,.3); padding: 20px">
        <div class="card-header  text-dark rounded-top-4 p-1">
-            <h4 class="mb-0 text-center">Ajouter un Membre</h4>
+            <h4 class="mb-0 text-center">Ajouter Une Tontine</h4>
         </div>
         <br>
         <form action="" method="post"  id="section">
@@ -51,35 +51,31 @@
         <!-- En-tête principal -->
         <div class="main-header text-center p-4 mb-4" style="z-index: -1">
             <h1 class="mb-0">
-                <i class="fas fa-users-cog text-primary me-3"></i>
-                Gestion des Membres
+                 <i class="fas fa-hand-holding-usd"></i>
+                Gestion des Tontines
             </h1>
         </div>
 
         <!-- Cards des rôles -->
         <div class="row">
             <!-- Exemple de carte - Répéter pour chaque rôle -->
-            {% for u in membres %}
+            {% for u in tontine %}
             <div class="col-lg-6 col-xl-4">
                 <div class="role-card">
                     <div class="role-header">
                         <h2 class="role-title">
                             
-                            {{ u.nom }} {{ u.prenom }}
+                            {{ u.intitule }}  De {{ u.association }}
                         </h2>
                     </div>
 
                     <div class="role-body">
                         <div class="role-description">
-                           vie à :   {{u.localisation }} <br> <br> phone :  {{ u.telephone }}
+                           Montant par Membre :   {{u.montant }} <br> <br> Montant De Penalité :  {{ u.montantPenalite }}
+                            <br><br> Tous les : {{ u.frequence }}
                         </div>
                     <div class="role-description">
-                        {% if  u.role == None %}
-                            cet membre n'a aucun role
-                            {% else %}
-                          role     :     {{u.role}}
-                            
-                        {% endif %}
+                        {{ u.description }}
                         </div>
                     
                     
@@ -92,6 +88,12 @@
                                 <i class="fas fa-trash-alt"></i>
                                 Supprimer
                             </button>
+                            <a href="{% url 'Backend:sessions' tontine_id=u.pk%}" style="text-decoration: none">
+                            <button class="btn btn-modern btn-success" >
+                                <i class="fas fa-coins"></i>
+                                Tour De Tontine
+                            </button>
+                                </a>
                         </div>
                     </div>
                 </div>
@@ -101,7 +103,7 @@
             <div class="modal fade" id="deleteModal{{ u.pk }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ u.pk }}" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <form method="POST" action="{% url 'Backend:supprimer_membre' u.pk %}">
+                        <form method="POST" action="{% url 'Backend:supprimer_tontine' u.pk %}">
                             {% csrf_token %}
                             <div class="modal-header">
                                 <h5 class="modal-title" id="deleteModalLabel{{ u.pk }}">
@@ -113,7 +115,7 @@
                             <div class="modal-body">
                                 <div class="text-center">
                                     <i class="fas fa-exclamation-circle text-warning fs-1 mb-3"></i>
-                                    <p class="fs-5">Êtes-vous sûr de vouloir supprimer le membre' <strong class="text-danger">{{ u.nom }}{{ u.prenom }}</strong> ?</p>
+                                    <p class="fs-5">Êtes-vous sûr de vouloir supprimer la tontine <strong class="text-danger">{{ u.intitule }}</strong> ?</p>
                                     <p class="text-muted">Cette action est irréversible.</p>
                                 </div>
                             </div>
@@ -137,12 +139,12 @@
                         <div class="modal-header">
                             <h5 class="modal-title">
                                 <i class="fas fa-edit me-2"></i>
-                                Modifier l'utilisateur'
+                                Modifier lde la tontine
                             </h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
                         </div>
                         <div class="modal-body">
-                            {% include 'admin/membre_update.html' with form=u.get_update_form %}
+                            {% include 'admin/tontine/form_partial.html' with form=u.get_update_form %}
                         </div>
                     </div>
                 </div>

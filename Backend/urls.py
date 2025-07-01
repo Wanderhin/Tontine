@@ -8,6 +8,7 @@ urlpatterns = [
     path('', views.LogoutView.as_view(), name="logout"),
     path('gestion des roles', CreationRoleUser.as_view(), name="CreationRoleUser"),
     path('accueil/', home, name="home"),
+    path('gerer les tontines/', CreateTontine.as_view(), name="CreateTontine"),
     path('liste des membres/', retournerMembre, name="liste_membre"),
     path('ajout-membre/', CreateMembre.as_view(), name='createMembre'),
     path('ajout-role-Membre/', CreateRoleMembre.as_view(), name='CreateRoleMembre'),
@@ -21,4 +22,8 @@ urlpatterns = [
     path('supprimer un role de membre/<int:pk>/', Supprimer_role_membre.as_view(), name="supprimer_role_membre"),
     path('modifier un membre/<int:pk>/', ModifierMembre.as_view(), name="modifier_membre"),
     path('supprimer un membre/<int:pk>/', Supprimer_membre.as_view(), name="supprimer_membre"),
+    path('modifier une tontine/<int:pk>/', ModifierTontine.as_view(), name="modifier_tontine"),
+    path('supprimer un membre/<int:pk>/', SupprimerTontine.as_view(), name="supprimer_tontine"),
+    path('<int:tontine_id>/sessionDeTontine/', SessionListCreateView.as_view(), name='sessions'),
+    path('session/<int:pk>/supprimer/', SessionDeleteView.as_view(), name='session_delete'),
 ]

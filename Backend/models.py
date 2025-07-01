@@ -114,7 +114,7 @@ class Utilisateur(AbstractUser):
 
 class Tontine(models.Model):
     intitule = models.CharField(max_length=150)
-    description = models.CharField(max_length=800)
+    description = models.TextField(verbose_name="Description de la tontine")
     montant = models.DecimalField(max_digits=10, decimal_places=2)
     frequence = models.CharField(max_length=20)
     montantPenalite = models.DecimalField(max_digits=10, decimal_places=2)
@@ -125,6 +125,10 @@ class Tontine(models.Model):
 
     class Meta:
         verbose_name = "Tontine"
+
+    def get_update_form(self):
+            from Backend.formulaire import TontineForm
+            return TontineForm(instance=self)
 
 
 class Periode(models.Model):

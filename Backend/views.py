@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import LoginView
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import *
@@ -296,5 +296,81 @@ class ModifierUser(UpdateView):
 
 def retournerMembre(request):
     membre = Membre.objects.all()
+    a = Association.objects.first()
 
-    return render(request, 'admin/liste_membre.html', context={'membres': membre})
+    return render(request, 'admin/liste_membre.html', context={'membres': membre, "a":a})
+
+
+@method_decorator(permission_requise("création de tontine"), name='dispatch')
+class CreateTontine(CreationRoleUser):
+    model = Tontine
+    form_class = TontineForm
+    template_name = "admin/tontine/Tontine.html"
+    success_url = reverse_lazy("Backend:CreateTontine")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        a = Association.objects.first()
+        tontine = Tontine.objects.all()
+        context["a"] = a
+        context['tontine'] = tontine
+        return context
+
+
+@method_decorator(permission_requise("modification de tontine"), name='dispatch')
+class SupprimerTontine(Supprimer_user):
+    model = Tontine
+    template_name = 'admin/tontine/Tontine.html'
+    success_url = reverse_lazy('Backend:CreateTontine')
+
+
+@method_decorator(permission_requise("suppression de tontine"), name='dispatch')
+class ModifierTontine(ModifierUser):
+    template_name = "admin/tontine/form_partial.html"
+    model = Tontine
+    form_class = TontineForm
+    success_url = reverse_lazy("Backend:CreateTontine")
+
+
+class SessionListCreateView(CreateView, ListView):
+    model = SessionTontine
+    form_class = SessionForm
+    template_name = 'admin/tontine/sessions.html'
+    context_object_name = 'sessions'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.tontine = get_object_or_404(Tontine, pk=kwargs['tontine_id'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form.instance.tontine = self.tontine
+        form.instance.status = True
+        messages.success(self.request, "Creation effectuée avec succès !")
+        return super().form_valid(form)
+
+    def get_queryset(self):
+        return SessionTontine.objects.filter(tontine=self.tontine)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tontine'] = self.tontine
+        context['nbre'] = SessionTontine.objects.filter(status=True, tontine=self.tontine).count()
+        context['form'] = self.get_form()
+        context['a'] = Association.objects.first()
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('Backend:sessions', kwargs={'tontine_id': self.tontine.id})
+
+
+class SessionDeleteView(DeleteView):
+    model = SessionTontine
+    template_name = 'admin/tontine/sessions.html'
+
+    def form_valid(self, form):
+        messages.success(self.request, "Suppression effectuée avec succès !")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        tontine_id = self.object.tontine.id
+        return reverse_lazy('Backend:sessions', kwargs={'tontine_id': tontine_id})

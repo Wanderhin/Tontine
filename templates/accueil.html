@@ -79,7 +79,7 @@
                         {% block participants %}
                         <a class="nav-link" data-bs-toggle="collapse" href="#submenuParticipants" role="button" aria-expanded="false" aria-controls="submenuParticipants">
                             <i class="fas fa-users"></i>
-                            Participants
+                            Membres
                             <i class="fas fa-caret-down ms-auto"></i>
                         </a>
                         {% endblock %}
@@ -108,10 +108,12 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        {% block tontine %}
+                        <a class="nav-link" href="{% url 'Backend:CreateTontine' %}">
                             <i class="fas fa-hand-holding-usd"></i>
-                            Cotisations
+                            Tontines
                         </a>
+                        {% endblock %}
                     </li>
 
                     <li class="nav-item">

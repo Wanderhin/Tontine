@@ -1,0 +1,8 @@
+<form method="post" action="{% url 'Backend:modifier_tontine' form.instance.pk %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-success">Modifier</button>
+    </div>
+</form>

@@ -106,6 +106,24 @@
             box-shadow: 0 2px 8px rgba(17, 153, 142, 0.3);
             transition: all 0.3s ease;
         }
+        .university-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
 
         .or {
             display: inline-block;
@@ -768,4 +786,27 @@
             .mobile-menu-toggle {
                 display: block;
             }
+        }
+         .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            border-radius: 10px;
+            box-shadow: 5px 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
         }

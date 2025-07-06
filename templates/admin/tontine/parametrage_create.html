@@ -1,0 +1,119 @@
+{% extends 'accueil.html' %}
+ {% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
+
+{% block entete %}
+                    <h5 class="mb-0">Gerer les Tontines</h5>
+                    {% endblock %}
+<div style="width: 30px; height: 60px; position: relative; right: 20px; top: 15px">
+    {% if messages %}
+    <div id="notification">
+        {% for message in messages %}
+            <div class="alert 
+                        {% if message.tags == 'success' %}
+                            alert-success
+                        {% elif message.tags == 'warning' %}
+                            alert-warning
+                        {% elif message.tags == 'error' %}
+                            alert-danger
+                        {% else %}
+                            alert-info
+                        {% endif %}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+</div>
+{% block tontine %}
+                        <a class="nav-link active" href="{% url 'Backend:CreateTontine' %}">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Tontines
+                        </a>
+                        {% endblock %}
+{% block remplir %}
+    
+    <div class="container py-5">
+        <!-- En-tête principal -->
+        <div class="main-header text-center p-4 mb-4" style="z-index: -1">
+            <h1 class="mb-0">
+                 <i class="fas fa-hand-holding-usd"></i>
+                Parametrage de session
+            </h1>
+        </div>
+    {% if session %}
+        <div class="alert alert-info">
+            <strong>Session :</strong> {{ session.intitule }}
+        </div>
+        {% endif %}
+  {% if nbreParametrage == 0 %}  
+    <div style="position: relative; margin: auto 0; border-radius:10px; box-shadow: 5px 8px 30px rgba(0,0,0,.3); padding: 20px">
+       <div class="card-header  text-dark rounded-top-4 p-1">
+            <h4 class="mb-0 text-center">Ajouter Une Tontine</h4>
+        </div>
+        <br>
+        <form action="" method="post"  id="section">
+
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <button type="submit" class="btn btn-success form-control" > valider </button>
+        </form> 
+    </div>
+   {% else %}
+      <div class="container py-5">
+        <!-- En-tête principal -->
+        <div class="main-header text-center p-4 mb-4" style="z-index: -1">
+            <h1 class="mb-0">
+                 <i class="fas fa-hand-holding-usd"></i>
+                Il ne peut avoir qu'un seul parametrage par session
+            </h1>
+        </div>
+    {% endif %}
+        <br><br>
+        <!-- Cards des rôles -->
+        <div class="row" style="z-index: 1">
+         {% if parametrages %}
+            <!-- Exemple de carte - Répéter pour chaque rôle -->
+            {% for parametrage  in parametrages %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="role-card">
+                    <div class="role-header">
+                        <h2 class="role-title">
+                            Periode {{ parametrage.periode }}
+                        </h2>
+                    </div>
+
+                    <div class="role-body">
+                        <div class="role-description">
+                           Debut :   {{ parametrage.dateDebut }} <br> <br> Fin : {{ parametrage.dateFin }}
+                            <br><br> Montant : {{ parametrage.montant }} FCFA
+                            <br><br> Cotisation : {{ parametrage.jourCotisation }}
+                        </div>
+                    <div class="role-description">
+                      Membre :  {{ parametrage.membre.count }}
+                        </div>
+                    
+                    
+                        <div class="actions-section">
+                        <a href="{% url 'Backend:cotisation_list' parametrage.id %}" style="text-decoration:none">
+
+                            <button class="btn btn-modern btn-edit" >
+                                <i class="fas fa-edit"></i>
+                                Gerer les Cotisations
+                            </button>
+                        </a>  
+                           
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+             
+             {% else %}
+             
+        {% endif %}
+        </div>
+    </div>
+    
+{% endblock %}

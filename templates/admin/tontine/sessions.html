@@ -65,7 +65,13 @@
                                        
                     
                         <div class="actions-section">
-                            
+                             <a href="{% url 'Backend:parametrage_create' session_id=u.pk %}" style="text-decoration: none" >
+
+                            <button class="btn btn-modern btn-edit" >
+                                <i class="fas fa-edit"></i>
+                                Gérer cette session
+                            </button>
+                             </a>
                             <button class="btn btn-modern btn-delete" data-bs-toggle="modal" data-bs-target="#deleteModal{{ u.pk }}">
                                 <i class="fas fa-trash-alt"></i>
                                 Supprimer

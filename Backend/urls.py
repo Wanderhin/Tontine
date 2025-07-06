@@ -13,6 +13,7 @@ urlpatterns = [
     path('ajout-membre/', CreateMembre.as_view(), name='createMembre'),
     path('ajout-role-Membre/', CreateRoleMembre.as_view(), name='CreateRoleMembre'),
     path('ajout-utilisateur/', AjouterUtilisateur.as_view(), name='AjouterUtilisateur'),
+    path('marquer-automatique/', marquer_cotisations_automatiquement, name='marquer_automatique'),
     path('association/<int:pk>', ParamettrageAssociation.as_view(), name="modification_asso"),
     path('supprimer role/<int:pk>/', Supprimer_role.as_view(), name="supprimer_role"),
     path('modifier role utilisateur/<int:pk>/', ModifierRoleUser.as_view(), name="modifier_role"),
@@ -26,4 +27,10 @@ urlpatterns = [
     path('supprimer un membre/<int:pk>/', SupprimerTontine.as_view(), name="supprimer_tontine"),
     path('<int:tontine_id>/sessionDeTontine/', SessionListCreateView.as_view(), name='sessions'),
     path('session/<int:pk>/supprimer/', SessionDeleteView.as_view(), name='session_delete'),
+    path('parametrage/create/<int:session_id>/', ParametrageTontineCreateView.as_view(), name='parametrage_create'),
+    # Gestion des cotisations
+    path('cotisations/<int:pk>/', CotisationListView.as_view(), name='cotisation_list'),
+    path('cotisation/<int:cotisation_id>/<str:action>/', traiter_cotisation, name='traiter_cotisation'),
+
+
 ]

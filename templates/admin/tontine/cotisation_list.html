@@ -1,0 +1,177 @@
+{% extends 'accueil.html' %}
+ {% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
+
+{% block entete %}
+                    <h5 class="mb-0">Gerer les Tontines</h5>
+                    {% endblock %}
+<div style="width: 30px; height: 60px; position: relative; right: 20px; top: 15px">
+    {% if messages %}
+    <div id="notification">
+        {% for message in messages %}
+            <div class="alert 
+                        {% if message.tags == 'success' %}
+                            alert-success
+                        {% elif message.tags == 'warning' %}
+                            alert-warning
+                        {% elif message.tags == 'error' %}
+                            alert-danger
+                        {% else %}
+                            alert-info
+                        {% endif %}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+</div>
+{% block tontine %}
+                        <a class="nav-link active" href="{% url 'Backend:CreateTontine' %}">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Tontines
+                        </a>
+                        {% endblock %}
+{% block remplir %}
+    
+    <div class="container mt-4">
+        <h1>Gestion des Cotisations</h1>
+        
+        <div class="alert alert-info">
+            <h5>{{ parametrage.session.intitule }}</h5>
+            <p class="mb-1"><strong>Période :</strong> Cotisation tous les {{ parametrage.periode }}</p>
+            <p class="mb-1"><strong>Du :</strong> {{ parametrage.dateDebut }} <strong>au :</strong> {{ parametrage.dateFin }}</p>
+            <p class="mb-0"><strong>Montant :</strong> {{ parametrage.montant }} FCFA</p>
+        </div>
+        
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        
+        {% if cotisations %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Cotisations en Attente</h5>
+                {% if peut_traiter %}
+                <span class="badge bg-success">Période active</span>
+                {% else %}
+                <span class="badge bg-danger">Période expirée</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for cotisation in cotisations %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>{{ cotisation.membre }}</h6>
+                                <p class="mb-2">
+                                    <strong>Date :</strong> {{ cotisation.date }}<br>
+                                    <strong>Montant :</strong> {{ cotisation.montant }} FCFA
+                                </p>
+                                
+                                {% if peut_traiter %}
+                                <div class="btn-group w-100" role="group">
+                                    <a href="{% url 'Backend:traiter_cotisation' cotisation.id 'reussir' %}" 
+                                       class="btn btn-success">
+                                        ✓ Réussite
+                                    </a>
+                                    <a href="{% url 'Backend:traiter_cotisation' cotisation.id 'echouer' %}" 
+                                       class="btn btn-danger">
+                                        ✗ Échec
+                                    </a>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning mb-0">
+                                    Période de traitement expirée
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <h5>Aucune cotisation en attente</h5>
+            <p>Les cotisations apparaîtront automatiquement selon la période définie.</p>
+        </div>
+        {% endif %}
+        
+        <div class="mt-3">
+            <a href="{% url 'Backend:parametrage_create' parametrage.session.id %}" class="btn btn-secondary">
+                Retour au Paramétrage
+            </a>
+        </div>
+    </div>
+    
+    <div class="row" style="z-index: 1">
+         {% if parametrages %}
+            <!-- Exemple de carte - Répéter pour chaque rôle -->
+            {% for parametrage  in parametrages %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="role-card">
+                    <div class="role-header">
+                        <h2 class="role-title">
+                            Periode {{ parametrage.periode }}
+                        </h2>
+                    </div>
+
+                    <div class="role-body">
+                        <div class="role-description">
+                           Debut :   {{ parametrage.dateDebut }} <br> <br> Fin : {{ parametrage.dateFin }}
+                            <br><br> Montant : {{ parametrage.montant }} FCFA
+                            <br><br> Cotisation : {{ parametrage.jourCotisation }}
+                        </div>
+                    <div class="role-description">
+                      Membre :  {{ parametrage.membre.count }}
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+             
+             {% else %}
+             
+        {% endif %}
+        </div>
+    <br><br>
+    
+    <div class="row">
+            <!-- Exemple de carte - Répéter pour chaque rôle -->
+            {% for ct in cotisation_terminer %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="role-card">
+                    <div class="role-header">
+                        <h2 class="role-title">
+                            
+                            {{ ct.membre }}  
+                        </h2>
+                    </div>
+
+                    <div class="role-body">
+                        <div class="role-description">
+                           Tontine :   {{ct.paramettrageTontine }} <br> <br> Date : {{ ct.date }} <br><br> Montant Tontine :  {{ ct.montant }}
+                            <br><br> {% if ct.status == True %}
+                                            <span class="permission-tag">Réussir</span>
+                            {% else %}
+                            <span class="badge bg-danger">Echouer</span>
+                                        {% endif %}
+                        </div>
+                    
+                    </div>
+                </div>
+            </div>
+
+                    
+            {% endfor %}
+        </div>
+    
+    
+{% endblock %}

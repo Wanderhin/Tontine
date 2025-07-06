@@ -1,7 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
 from django.db import models
-from datetime import datetime
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 
 class Association(models.Model):
@@ -131,17 +132,6 @@ class Tontine(models.Model):
             return TontineForm(instance=self)
 
 
-class Periode(models.Model):
-    periode = models.CharField(max_length=20)
-    nomComplet = models.CharField(max_length=250)
-
-    def __str__(self):
-        return self.nomComplet
-
-    class Meta:
-        verbose_name = "Période"
-
-
 class SessionTontine(models.Model):
     intitule = models.CharField(max_length=150)
     tontine = models.ForeignKey(Tontine, on_delete=models.SET_NULL, null=True)
@@ -155,20 +145,50 @@ class SessionTontine(models.Model):
 
 
 class ParametrageTontine(models.Model):
-    dateDebut = models.DateField()
-    dateFin = models.DateField()
-    jourTirage = models.DateField()
-    jourBouffe = models.CharField(max_length=15)
-    typeTirage = models.CharField(max_length=150)
-    periode = models.ForeignKey(Periode, on_delete=models.SET_NULL, null=True)
-    tontine = models.ForeignKey(Tontine, on_delete=models.SET_NULL, null=True)
-    session = models.ForeignKey(SessionTontine, on_delete=models.SET_NULL, null=True)
+    dateDebut = models.DateField(verbose_name="Date de debut session")
+    dateFin = models.DateField(verbose_name="date de fin de session")
+    jourTirage = models.DateField(verbose_name="jour du tirage")
+    jourCotisation = models.CharField(max_length=15, verbose_name="Jour de cotisation", default="lundi")
+    typeTirage = models.CharField(max_length=150, verbose_name="type de tirage")
+    periode = models.CharField(max_length=150, verbose_name="periode de cotisation")
+    montant = models.DecimalField(max_digits=10, decimal_places=2)
+    membre = models.ManyToManyField(Membre, verbose_name="selectionner tous les Membre Adherants")
+    session = models.OneToOneField(SessionTontine, on_delete=models.SET_NULL, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.dateFin and self.dateDebut:
+            self.dateFin = self.calculer_date_fin()
+        super().save(*args, **kwargs)
+
+    def calculer_date_fin(self):
+        nombre_membres = self.membre.count() if self.pk else 0
+        date_debut = self.dateDebut
+
+        if self.periode == '1_semaine':
+            delta = timedelta(weeks=nombre_membres)
+        elif self.periode == '2_semaines':
+            delta = timedelta(weeks=2 * nombre_membres)
+        elif self.periode == '3_semaines':
+            delta = timedelta(weeks=3 * nombre_membres)
+        elif self.periode == '1_mois':
+            delta = relativedelta(months=nombre_membres)
+        elif self.periode == '3_mois':
+            delta = relativedelta(months=3 * nombre_membres)
+        elif self.periode == '6_mois':
+            delta = relativedelta(months=6 * nombre_membres)
+        elif self.periode == '1_an':
+            delta = relativedelta(years=nombre_membres)
+        else:
+            delta = timedelta(weeks=nombre_membres)
+
+        date_fin = date_debut + delta + timedelta(days=2)
+        return date_fin
 
     def __str__(self):
-        return self.session
+        return str(self.session) if self.session else "Paramétrage sans session"
 
     class Meta:
-        verbose_name = "Paramettrage"
+        verbose_name = "Paramétrage"
 
 
 class Cotisation(models.Model):
@@ -182,11 +202,12 @@ class Cotisation(models.Model):
     def save(self, *args, **kwargs):
         if not self.date:
             self.date = datetime.today().date()
-
+        if not self.montant and self.paramettrageTontine:
+            self.montant = self.paramettrageTontine.montant
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.montant
+        return f"{self.membre} - {self.montant}"
 
     class Meta:
         verbose_name = "Cotisation"

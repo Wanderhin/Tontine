@@ -18,12 +18,20 @@
 {% block remplir %}
     
 
-
-    <div style="position: relative; left: 300px;top: -40px; width: 700px; height: 650px; border-radius:10px; box-shadow: 5px 8px 30px rgba(0,0,0,.3); padding: 20px"> 
-       <div class="card-header  text-dark rounded-top-4 p-1">
-            <h4 class="mb-0 text-center">Ajouter un role</h4>
-        </div>
-        <br>
+ <div class="container mt-5">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#roleModal">
+            Ajouter un rôle
+        </button>
+    </div>
+    <div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header text-dark">
+                    <h4 class="modal-title mb-0 w-100 text-center" id="roleModalLabel">Ajouter un rôle</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+    
         <form action="" method="post"  id="section">
             
             {% csrf_token %}
@@ -32,8 +40,8 @@
             
             <button type="submit" class="btn btn-success form-control" > valider </button>
         </form> 
-    </div>
-  <br> <br>
+                </div></div></div></div>
+  
 <div class="container py-5">
         <!-- En-tête principal -->
         <div class="main-header text-center p-4 mb-4" style="z-index: -1">

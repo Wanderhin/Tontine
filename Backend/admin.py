@@ -51,9 +51,7 @@ class TontineAdmin(admin.ModelAdmin):
     list_display_links = ("intitule",)
 
 
-class PeriodeAdmin(admin.ModelAdmin):
-    list_display = ("periode", "nomComplet",)
-    list_display_links = ("periode",)
+
 
 
 class SessionAdmin(admin.ModelAdmin):
@@ -62,8 +60,8 @@ class SessionAdmin(admin.ModelAdmin):
 
 
 class ParamettrageAdmin(admin.ModelAdmin):
-    list_display = ("tontine", "session", "periode", "typeTirage", "dateDebut", "dateFin", "jourTirage", "jourBouffe")
-    list_display_links = ("tontine",)
+    list_display = ("session", "montant", "periode", "typeTirage", "dateDebut", "dateFin", "jourTirage", "jourCotisation")
+    list_display_links = ("session",)
 
 
 class CotisationAdmin(admin.ModelAdmin):
@@ -87,7 +85,6 @@ admin.site.register(Permission, PermissionAdmin)
 admin.site.register(RoleMembre, RoleMembreAdmin)
 admin.site.register(Membre, MembreAdmin)
 admin.site.register(Tontine, TontineAdmin)
-admin.site.register(Periode, PeriodeAdmin)
 admin.site.register(SessionTontine, SessionAdmin)
 admin.site.register(ParametrageTontine, ParamettrageAdmin)
 admin.site.register(Cotisation, CotisationAdmin)

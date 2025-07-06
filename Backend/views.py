@@ -1,11 +1,14 @@
+import calendar
 import datetime
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import LoginView
-from django.shortcuts import render, get_object_or_404
-from django.urls import reverse_lazy
+from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse_lazy, reverse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.generic import *
 
@@ -374,3 +377,350 @@ class SessionDeleteView(DeleteView):
     def get_success_url(self):
         tontine_id = self.object.tontine.id
         return reverse_lazy('Backend:sessions', kwargs={'tontine_id': tontine_id})
+
+
+class ParametrageTontineCreateView(CreateView):
+    model = ParametrageTontine
+    form_class = ParametrageTontineForm
+    template_name = 'admin/tontine/parametrage_create.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        session_id = self.kwargs.get('session_id')
+        if session_id:
+            kwargs['session'] = get_object_or_404(SessionTontine, id=session_id)
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        session_id = self.kwargs.get('session_id')
+
+        context['a'] = Association.objects.first()
+        if session_id:
+            context['session'] = get_object_or_404(SessionTontine, id=session_id)
+            # Récupérer les paramétrages existants pour cette session
+            context['parametrages'] = ParametrageTontine.objects.filter(session_id=session_id)
+            context['nbreParametrage'] = ParametrageTontine.objects.filter(session_id=session_id).count()
+        return context
+
+    def get_success_url(self):
+        return reverse('Backend:parametrage_create', kwargs={'session_id': self.object.session.id})
+
+    def form_valid(self, form):
+        messages.success(self.request, "Creation effectuée avec succès !")
+        return super().form_valid(form)
+
+
+class CotisationListView(DetailView):
+    model = ParametrageTontine
+    template_name = 'admin/tontine/cotisation_list.html'
+    context_object_name = 'parametrage'
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        parametrage = self.get_object()
+        user = self.request.user
+        # Générer les cotisations si nécessaire
+        self.generer_cotisations_si_necessaire(parametrage)
+
+        # Récupérer les cotisations en attente (etat=False)
+        cotisations_en_attente = Cotisation.objects.filter(
+            paramettrageTontine=parametrage,
+            etat=False
+        ).order_by('date', 'membre__nom')
+
+        context['cotisations'] = cotisations_en_attente
+        context['peut_traiter'] = self.peut_traiter_cotisations(parametrage)
+        context['a'] = Association.objects.first()
+        context['cotisation_terminer'] = Cotisation.objects.filter(paramettrageTontine=parametrage,
+            etat=True).order_by('date', 'membre__nom')
+        context['cotisation_terminer_user'] = Cotisation.objects.filter(paramettrageTontine=parametrage,
+                                                                   etat=True, membre=user.membre).order_by('date',
+                                                                                                           'membre__nom')
+
+        return context
+
+    def generer_cotisations_si_necessaire(self, parametrage):
+        """Génère les cotisations pour la période courante si nécessaire"""
+        aujourd_hui = timezone.now().date()
+
+        # Calculer la prochaine date de cotisation
+        prochaine_date = self.calculer_prochaine_date_cotisation(parametrage, aujourd_hui)
+
+        if prochaine_date and prochaine_date <= aujourd_hui:
+            # Vérifier si des cotisations existent déjà pour cette période
+            cotisations_existantes = Cotisation.objects.filter(
+                paramettrageTontine=parametrage,
+                date=prochaine_date
+            ).exists()
+
+            if not cotisations_existantes:
+                # Créer les cotisations pour tous les membres
+                for membre in parametrage.membre.all():
+                    Cotisation.objects.create(
+                        date=prochaine_date,
+                        montant=parametrage.montant,
+                        membre=membre,
+                        paramettrageTontine=parametrage
+                    )
+
+    def calculer_prochaine_date_cotisation(self, parametrage, date_reference):
+        """Calcule la prochaine date de cotisation basée sur la période et le jour"""
+        jours_semaine = {
+            'lundi': 0, 'mardi': 1, 'mercredi': 2, 'jeudi': 3,
+            'vendredi': 4, 'samedi': 5, 'dimanche': 6
+        }
+
+        jour_cotisation = jours_semaine.get(parametrage.jourCotisation.lower())
+        if jour_cotisation is None:
+            return None
+
+        date_debut = parametrage.dateDebut
+        date_fin = parametrage.dateFin
+
+        if date_reference < date_debut or date_reference > date_fin:
+            return None
+
+        # Calculer la date de cotisation pour la période courante
+        if parametrage.periode == '1_semaine':
+            # Trouver le dernier jour de cotisation de la semaine
+            jours_depuis_debut = (date_reference - date_debut).days
+            semaines_ecoulees = jours_depuis_debut // 7
+            date_cotisation = date_debut + timedelta(weeks=semaines_ecoulees)
+
+            # Ajuster au bon jour de la semaine
+            while date_cotisation.weekday() != jour_cotisation:
+                date_cotisation += timedelta(days=1)
+
+        elif parametrage.periode == '2_semaines':
+            # Calcul par cycles de 2 semaines
+            jours_depuis_debut = (date_reference - date_debut).days
+            cycles_ecoules = jours_depuis_debut // 14
+            date_cycle_debut = date_debut + timedelta(weeks=cycles_ecoules * 2)
+
+            # Trouver le jour de cotisation dans ce cycle de 2 semaines
+            date_cotisation = date_cycle_debut
+            while date_cotisation.weekday() != jour_cotisation:
+                date_cotisation += timedelta(days=1)
+
+            # Si le jour de cotisation est passé dans ce cycle, prendre le suivant
+            if date_cotisation < date_reference:
+                date_cotisation += timedelta(weeks=2)
+
+        elif parametrage.periode == '3_semaines':
+            # Calcul par cycles de 3 semaines
+            jours_depuis_debut = (date_reference - date_debut).days
+            cycles_ecoules = jours_depuis_debut // 21
+            date_cycle_debut = date_debut + timedelta(weeks=cycles_ecoules * 3)
+
+            # Trouver le jour de cotisation dans ce cycle de 3 semaines
+            date_cotisation = date_cycle_debut
+            while date_cotisation.weekday() != jour_cotisation:
+                date_cotisation += timedelta(days=1)
+
+            # Si le jour de cotisation est passé dans ce cycle, prendre le suivant
+            if date_cotisation < date_reference:
+                date_cotisation += timedelta(weeks=3)
+
+        elif parametrage.periode == '1_mois':
+            # Trouver le dernier jour de cotisation du mois
+            annee = date_reference.year
+            mois = date_reference.month
+
+            # Dernier jour du mois
+            dernier_jour = calendar.monthrange(annee, mois)[1]
+
+            # Trouver le dernier jour de cotisation du mois
+            for jour in range(dernier_jour, 0, -1):
+                date_test = datetime(annee, mois, jour).date()
+                if date_test.weekday() == jour_cotisation:
+                    date_cotisation = date_test
+                    break
+            else:
+                return None
+
+        elif parametrage.periode == '3_mois':
+            # Calcul par trimestres
+            # Calculer le nombre de trimestres depuis le début
+            mois_depuis_debut = (date_reference.year - date_debut.year) * 12 + (date_reference.month - date_debut.month)
+            trimestres_ecoules = mois_depuis_debut // 3
+
+            # Date de début du trimestre courant
+            date_trimestre_debut = date_debut + relativedelta(months=trimestres_ecoules * 3)
+
+            # Trouver le dernier jour de cotisation du trimestre
+            date_fin_trimestre = date_trimestre_debut + relativedelta(months=3, days=-1)
+
+            # Chercher le dernier jour de cotisation dans le trimestre
+            date_cotisation = None
+            date_courante = date_fin_trimestre
+
+            while date_courante >= date_trimestre_debut:
+                if date_courante.weekday() == jour_cotisation:
+                    date_cotisation = date_courante
+                    break
+                date_courante -= timedelta(days=1)
+
+            # Si pas trouvé ou si la date est passée, prendre le prochain trimestre
+            if date_cotisation is None or date_cotisation < date_reference:
+                date_trimestre_suivant = date_trimestre_debut + relativedelta(months=3)
+                date_fin_trimestre_suivant = date_trimestre_suivant + relativedelta(months=3, days=-1)
+
+                date_courante = date_fin_trimestre_suivant
+                while date_courante >= date_trimestre_suivant:
+                    if date_courante.weekday() == jour_cotisation:
+                        date_cotisation = date_courante
+                        break
+                    date_courante -= timedelta(days=1)
+
+        elif parametrage.periode == '6_mois':
+            # Calcul par semestres
+            # Calculer le nombre de semestres depuis le début
+            mois_depuis_debut = (date_reference.year - date_debut.year) * 12 + (date_reference.month - date_debut.month)
+            semestres_ecoules = mois_depuis_debut // 6
+
+            # Date de début du semestre courant
+            date_semestre_debut = date_debut + relativedelta(months=semestres_ecoules * 6)
+
+            # Trouver le dernier jour de cotisation du semestre
+            date_fin_semestre = date_semestre_debut + relativedelta(months=6, days=-1)
+
+            # Chercher le dernier jour de cotisation dans le semestre
+            date_cotisation = None
+            date_courante = date_fin_semestre
+
+            while date_courante >= date_semestre_debut:
+                if date_courante.weekday() == jour_cotisation:
+                    date_cotisation = date_courante
+                    break
+                date_courante -= timedelta(days=1)
+
+            # Si pas trouvé ou si la date est passée, prendre le prochain semestre
+            if date_cotisation is None or date_cotisation < date_reference:
+                date_semestre_suivant = date_semestre_debut + relativedelta(months=6)
+                date_fin_semestre_suivant = date_semestre_suivant + relativedelta(months=6, days=-1)
+
+                date_courante = date_fin_semestre_suivant
+                while date_courante >= date_semestre_suivant:
+                    if date_courante.weekday() == jour_cotisation:
+                        date_cotisation = date_courante
+                        break
+                    date_courante -= timedelta(days=1)
+
+        elif parametrage.periode == '1_an':
+            # Calcul par années
+            # Calculer le nombre d'années depuis le début
+            annees_ecoulees = date_reference.year - date_debut.year
+
+            # Date de début de l'année courante du cycle
+            date_annee_debut = date_debut + relativedelta(years=annees_ecoulees)
+
+            # Trouver le dernier jour de cotisation de l'année
+            date_fin_annee = date_annee_debut + relativedelta(years=1, days=-1)
+
+            # Chercher le dernier jour de cotisation dans l'année
+            date_cotisation = None
+            date_courante = date_fin_annee
+
+            while date_courante >= date_annee_debut:
+                if date_courante.weekday() == jour_cotisation:
+                    date_cotisation = date_courante
+                    break
+                date_courante -= timedelta(days=1)
+
+            # Si pas trouvé ou si la date est passée, prendre l'année suivante
+            if date_cotisation is None or date_cotisation < date_reference:
+                date_annee_suivante = date_annee_debut + relativedelta(years=1)
+                date_fin_annee_suivante = date_annee_suivante + relativedelta(years=1, days=-1)
+
+                date_courante = date_fin_annee_suivante
+                while date_courante >= date_annee_suivante:
+                    if date_courante.weekday() == jour_cotisation:
+                        date_cotisation = date_courante
+                        break
+                    date_courante -= timedelta(days=1)
+
+        else:
+            # Période non supportée
+            return None
+
+        # Vérifier que la date calculée est dans la plage autorisée
+        if date_cotisation and date_cotisation <= date_fin:
+            return date_cotisation
+        else:
+            return None
+
+    def peut_traiter_cotisations(self, parametrage):
+        """Vérifie si on peut encore traiter les cotisations (dans les 2 jours)"""
+        aujourd_hui = timezone.now().date()
+
+        # Récupérer la dernière date de cotisation
+        derniere_cotisation = Cotisation.objects.filter(
+            paramettrageTontine=parametrage,
+            etat=False
+        ).first()
+
+        if derniere_cotisation:
+            date_limite = derniere_cotisation.date + timedelta(days=2)
+            return aujourd_hui <= date_limite
+
+        return False
+
+
+def traiter_cotisation(request, cotisation_id, action):
+    """Traite une cotisation (succès ou échec)"""
+    cotisation = get_object_or_404(Cotisation, id=cotisation_id)
+    a = Association.objects.first()
+
+    if action == 'reussir':
+        cotisation.status = True
+        cotisation.etat = True
+        message = f"Cotisation de {cotisation.membre} marquée comme réussie"
+    elif action == 'echouer':
+        cotisation.status = False
+        cotisation.etat = True
+        message = f"Cotisation de {cotisation.membre} marquée comme échouée"
+    else:
+        messages.error(request, "Action invalide")
+        return redirect('Backend:cotisation_list', pk=cotisation.paramettrageTontine.id)
+
+    cotisation.save()
+    messages.success(request, message)
+
+    # Vérifier si toutes les cotisations de la période sont traitées
+    cotisations_non_traitees = Cotisation.objects.filter(
+        paramettrageTontine=cotisation.paramettrageTontine,
+        date=cotisation.date,
+        etat=False
+    ).count()
+
+    if cotisations_non_traitees == 0:
+        # Vérifier si la session est terminée
+        if timezone.now().date() >= cotisation.paramettrageTontine.dateFin:
+            session = cotisation.paramettrageTontine.session
+            session.status = True
+            session.save()
+            messages.info(request, "Session terminée automatiquement")
+
+    return redirect('Backend:cotisation_list', pk=cotisation.paramettrageTontine.id)
+
+
+def marquer_cotisations_automatiquement(request):
+    """Marque automatiquement les cotisations non traitées comme échec après 2 jours"""
+    aujourd_hui = timezone.now().date()
+
+    # Récupérer toutes les cotisations non traitées dépassant 2 jours
+    cotisations_a_traiter = Cotisation.objects.filter(
+        etat=False,
+        date__lt=aujourd_hui - timedelta(days=2)
+    )
+
+    count = 0
+    for cotisation in cotisations_a_traiter:
+        cotisation.status = False
+        cotisation.etat = True
+        cotisation.save()
+        count += 1
+
+    return JsonResponse({'message': f'{count} cotisations marquées automatiquement comme échec'})

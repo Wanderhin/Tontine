@@ -1,0 +1,87 @@
+{% extends 'accueil.html' %}
+{% load permissions_tags %}
+{% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
+
+{% block entete %}
+                    <h5 class="mb-0">Liste Des tontines</h5>
+                    {% endblock %}
+<div style="width: 30px; height: 60px; position: relative; right: 20px; top: 15px">
+    {% if messages %}
+    <div id="notification">
+        {% for message in messages %}
+            <div class="alert 
+                        {% if message.tags == 'success' %}
+                            alert-success
+                        {% elif message.tags == 'warning' %}
+                            alert-warning
+                        {% elif message.tags == 'error' %}
+                            alert-danger
+                        {% else %}
+                            alert-info
+                        {% endif %}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+</div>
+{% block consulter %}
+                    <li class="nav-item">
+                        <a class="nav-link active" href="">
+                            <i class="fas fa-cog"></i>
+                             voir cotisations
+                        </a>
+                    </li>
+                    {% endblock %}
+{% block remplir %}
+    
+    <div class="container py-5">
+        <!-- En-tête principal -->
+        <div class="main-header text-center p-4 mb-4" style="z-index: -1">
+            <h1 class="mb-0">
+                 <i class="fas fa-hand-holding-usd"></i>
+                liste des tontines
+            </h1>
+        </div>
+
+        <!-- Cards des rôles -->
+        <div class="row">
+            <!-- Exemple de carte - Répéter pour chaque rôle -->
+            {% for u in tontine %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="role-card">
+                    <div class="role-header">
+                        <h2 class="role-title">
+                            
+                            {{ u.intitule }}  De {{ u.association }}
+                        </h2>
+                    </div>
+
+                    <div class="role-body">
+                        <div class="role-description">
+                           Montant par Membre :   {{u.montant }} <br> <br> Montant De Penalité :  {{ u.montantPenalite }}
+                            <br><br> Tous les : {{ u.frequence }}
+                        </div>
+                    <div class="role-description">
+                        {{ u.description }}
+                        </div>
+                    
+                    
+                        <div class="actions-section">
+                            <a href="{% url 'Backend:retournerSession' tontine_id=u.pk%}" style="text-decoration: none">
+                            <button class="btn btn-modern btn-success" >
+                                <i class="fas fa-coins"></i>
+                                Tour De Tontine
+                            </button>
+                                </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+          
+           
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

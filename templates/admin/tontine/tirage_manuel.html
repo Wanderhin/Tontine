@@ -1,0 +1,268 @@
+{% extends 'accueil.html' %}
+ {% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>
+ {% endblock %}
+
+{% block entete %}
+                    <h5 class="mb-0">Gerer les Tontines</h5>
+{% endblock %}
+<div style="width: 30px; height: 60px; position: relative; right: 20px; top: 15px">
+    {% if messages %}
+    <div id="notification">
+        {% for message in messages %}
+            <div class="alert 
+                        {% if message.tags == 'success' %}
+                            alert-success
+                        {% elif message.tags == 'warning' %}
+                            alert-warning
+                        {% elif message.tags == 'error' %}
+                            alert-danger
+                        {% else %}
+                            alert-info
+                        {% endif %}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+</div>
+{% block tontine %}
+                        <a class="nav-link active" href="{% url 'Backend:CreateTontine' %}">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Tontines
+                        </a>
+{% endblock %}
+{% block remplir %}
+   <div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-hand-paper"></i> Tirage Manuel
+                    </h4>
+                    <small class="text-muted">Session: {{ parametrage.session|default:"Sans session" }}</small>
+                </div>
+                
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Informations du paramétrage</h6>
+                                <p><strong>Type de tirage:</strong> {{ parametrage.typeTirage|title }}</p>
+                                <p><strong>Nombre de membres:</strong> {{ nombre_membres }}</p>
+                                <p><strong>Numéros disponibles:</strong> 1 à {{ nombre_membres }}</p>
+                                <p class="mb-0"><strong>Date de début:</strong> {{ parametrage.dateDebut|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-exclamation-triangle"></i> Instructions</h6>
+                                <ul class="mb-0">
+                                    <li>Attribuez un numéro unique à chaque membre</li>
+                                    <li>Les numéros doivent être entre 1 et {{ nombre_membres }}</li>
+                                    <li>Chaque numéro ne peut être utilisé qu'une seule fois</li>
+                                    <li>L'ordre des numéros détermine l'ordre de passage</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post" action="{% url 'Backend:sauvegarder_tirage_manuel' parametrage.id %}" id="tirageForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-users"></i> Attribution des numéros aux membres
+                                </h5>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-bordered">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th width="5%">#</th>
+                                                <th width="40%">Membre</th>
+                                                <th width="25%">Contact</th>
+                                                <th width="30%">Numéro de tirage</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for membre in membres %}
+                                            <tr>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                            <span class="text-white fw-bold">{{ membre.nom|first|upper }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <strong>{{ membre.nom }} {{ membre.prenom }}</strong>
+                                                            <br>
+                                                            <small class="text-muted">{{ membre.role|default:"Profession non renseignée" }}</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <small>
+                                                        <i class="fas fa-phone"></i> {{ membre.telephone|default:"N/A" }}<br>
+                                                        <i class="fas fa-envelope"></i> {{ membre.localisation|default:"N/A" }}
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">N°</span>
+                                                        <select name="numero_{{ membre.id }}" 
+                                                                class="form-select numero-select" 
+                                                                required>
+                                                            <option value="">Choisir un numéro</option>
+                                                            {% for numero in numeros_disponibles %}
+                                                                <option value="{{ numero }}">{{ numero }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Retour
+                                    </a>
+                                    <button type="submit" class="btn btn-success" id="submitBtn">
+                                        <i class="fas fa-save"></i> Sauvegarder le tirage
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.numero-select {
+    max-width: 120px;
+}
+
+.alert {
+    border-radius: 8px;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #dee2e6;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f8f9fa;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selects = document.querySelectorAll('.numero-select');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Fonction pour vérifier les doublons
+    function checkDuplicates() {
+        const values = Array.from(selects).map(select => select.value).filter(value => value !== '');
+        const duplicates = values.filter((value, index) => values.indexOf(value) !== index);
+        
+        // Réinitialiser les styles
+        selects.forEach(select => {
+            select.classList.remove('is-invalid');
+            const feedback = select.parentNode.querySelector('.invalid-feedback');
+            if (feedback) {
+                feedback.remove();
+            }
+        });
+        
+        // Marquer les doublons
+        if (duplicates.length > 0) {
+            selects.forEach(select => {
+                if (duplicates.includes(select.value)) {
+                    select.classList.add('is-invalid');
+                    if (!select.parentNode.querySelector('.invalid-feedback')) {
+                        const feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.textContent = 'Ce numéro est déjà utilisé';
+                        select.parentNode.appendChild(feedback);
+                    }
+                }
+            });
+            submitBtn.disabled = true;
+        } else {
+            submitBtn.disabled = false;
+        }
+    }
+    
+    // Écouter les changements sur tous les selects
+    selects.forEach(select => {
+        select.addEventListener('change', checkDuplicates);
+    });
+    
+    // Vérifier avant soumission
+    document.getElementById('tirageForm').addEventListener('submit', function(e) {
+        checkDuplicates();
+        
+        // Vérifier que tous les champs sont remplis
+        const allFilled = Array.from(selects).every(select => select.value !== '');
+        
+        if (!allFilled) {
+            e.preventDefault();
+            alert('Veuillez attribuer un numéro à tous les membres.');
+            return;
+        }
+        
+        // Vérifier les doublons
+        const values = Array.from(selects).map(select => select.value);
+        const duplicates = values.filter((value, index) => values.indexOf(value) !== index);
+        
+        if (duplicates.length > 0) {
+            e.preventDefault();
+            alert('Certains numéros sont utilisés plusieurs fois. Veuillez corriger.');
+            return;
+        }
+        
+        // Confirmation avant soumission
+        if (!confirm('Êtes-vous sûr de vouloir sauvegarder ce tirage ? Cette action est irréversible.')) {
+            e.preventDefault();
+        }
+    });
+});
+</script> 
+{% endblock %}

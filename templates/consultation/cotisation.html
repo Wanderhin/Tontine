@@ -1,0 +1,116 @@
+{% extends 'accueil.html' %}
+ {% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
+
+{% block entete %}
+                    <h5 class="mb-0">Voir Cotisation </h5>
+                    {% endblock %}
+<div style="width: 30px; height: 60px; position: relative; right: 20px; top: 15px">
+    {% if messages %}
+    <div id="notification">
+        {% for message in messages %}
+            <div class="alert 
+                        {% if message.tags == 'success' %}
+                            alert-success
+                        {% elif message.tags == 'warning' %}
+                            alert-warning
+                        {% elif message.tags == 'error' %}
+                            alert-danger
+                        {% else %}
+                            alert-info
+                        {% endif %}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+</div>
+  {% block consulter %}
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'Backend:concultation_tontine' %}">
+                            <i class="fas fa-cog"></i>
+                             voir cotisations
+                        </a>
+                    </li>
+                    {% endblock %}
+{% block tontine %}
+                        <a class="nav-link " href="{% url 'Backend:CreateTontine' %}">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Gerer Tontines
+                        </a>
+                        {% endblock %}
+{% block remplir %}
+  
+        <div class="mt-3">
+            <a href="{% url 'Backend:retournerParamettrage' parametrage.session.id %}" class="btn btn-secondary">
+                Retour 
+            </a>
+        </div>
+
+    <br><br> 
+    <div class="row" style="z-index: 1">
+         {% if parametrages %}
+            <!-- Exemple de carte - Répéter pour chaque rôle -->
+            {% for parametrage  in parametrages %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="role-card">
+                    <div class="role-header">
+                        <h2 class="role-title">
+                            Periode {{ parametrage.periode }}
+                        </h2>
+                    </div>
+
+                    <div class="role-body">
+                        <div class="role-description">
+                           Debut :   {{ parametrage.dateDebut }} <br> <br> Fin : {{ parametrage.dateFin }}
+                            <br><br> Montant : {{ parametrage.montant }} FCFA
+                            <br><br> Cotisation : {{ parametrage.jourCotisation }}
+                        </div>
+                    <div class="role-description">
+                      Membre :  {{ parametrage.membre.count }}
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+             
+             {% else %}
+             
+        {% endif %}
+        </div>
+    <br><br>
+    
+    <div class="row" >
+    
+            {% for ct in cotisation_terminer %}
+            <div class="col-lg-6 col-xl-4" style="margin-left: 10px">
+                <div class="role-card">
+                    <div class="role-header">
+                        <h2 class="role-title">
+                            
+                            {{ ct.membre }}  
+                        </h2>
+                    </div>
+
+                    <div class="role-body">
+                        <div class="role-description">
+                           Tontine :   {{ct.paramettrageTontine }} <br> <br> Date : {{ ct.date }} <br><br> Montant Cotisation :  {{ ct.montant }}
+                            <br><br> {% if ct.status == True %}
+                                            <span class="permission-tag">Réussir</span>
+                            {% else %}
+                            raison Echec: {{ ct.raison_echec }} <br>
+                            <span class="badge bg-danger">Echouer</span>
+                            
+                                        {% endif %}
+                        </div>
+                    
+                    </div>
+                </div>
+            </div>
+
+                    
+            {% endfor %}
+        </div>
+    
+    
+{% endblock %}

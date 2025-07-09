@@ -1,5 +1,6 @@
 {% extends 'accueil.html' %}
- {% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
+{% load permissions_tags %}
+{% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
 
 {% block entete %}
                     <h5 class="mb-0">Gerer les Tontines</h5>
@@ -31,6 +32,7 @@
                         </a>
                         {% endblock %}
 {% block remplir %}
+    {% la_permission "gerer tontine" as gerer_tontine %}
        <div class="container mt-5">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#roleModal">
             Ajouter une Tontine
@@ -89,6 +91,7 @@
                     
                     
                         <div class="actions-section">
+                            {% if  gerer_tontine  %}
                             <button class="btn btn-modern btn-edit" data-bs-toggle="modal" data-bs-target="#updateModal{{ u.pk }}">
                                 <i class="fas fa-edit"></i>
                                 Modifier
@@ -97,6 +100,7 @@
                                 <i class="fas fa-trash-alt"></i>
                                 Supprimer
                             </button>
+                            {% endif %}
                             <a href="{% url 'Backend:sessions' tontine_id=u.pk%}" style="text-decoration: none">
                             <button class="btn btn-modern btn-success" >
                                 <i class="fas fa-coins"></i>

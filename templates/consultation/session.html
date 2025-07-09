@@ -1,0 +1,102 @@
+{% extends 'accueil.html' %}
+{% load permissions_tags %}
+{% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
+
+{% block entete %}
+                    <h5 class="mb-0">Gerer les Tontines</h5>
+                    {% endblock %}
+<div style="width: 30px; height: 60px; position: relative; right: 20px; top: 15px">
+{% la_permission "admin" as droit_admin_user %}
+    {% if messages %}
+    <div id="notification">
+        {% for message in messages %}
+            <div class="alert 
+                        {% if message.tags == 'success' %}
+                            alert-success
+                        {% elif message.tags == 'warning' %}
+                            alert-warning
+                        {% elif message.tags == 'error' %}
+                            alert-danger
+                        {% else %}
+                            alert-info
+                        {% endif %}" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+</div>
+  {% block consulter %}
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'Backend:concultation_tontine' %}">
+                            <i class="fas fa-cog"></i>
+                             voir cotisations
+                        </a>
+                    </li>
+  {% endblock %}
+{% block tontine %}
+                        <a class="nav-link " href="{% url 'Backend:CreateTontine' %}">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Gerer Tontines
+                        </a>
+{% endblock %}
+{% block remplir %}
+       <div class="container py-5">
+        <!-- En-tête principal -->
+        <div class="main-header text-center p-4 mb-4" style="z-index: -1">
+            <h1 class="mb-0">
+                 <i class="fas fa-hand-holding-usd"></i>
+                 Tours De Tontines
+            </h1>
+        </div>
+
+        <!-- Cards des rôles -->
+        <div class="row">
+            <!-- Exemple de carte - Répéter pour chaque rôle -->
+            {% for u in sessions %}
+            <div class="col-lg-6 col-xl-4">
+                <div class="role-card">
+                    <div class="role-header">
+                        <h2 class="role-title">
+                            
+                            {{ u.intitule }}  
+                        </h2>
+                    </div>
+
+                    <div class="role-body">
+                        <div class="role-description">
+                           Tontine :   {{u.tontine }} <br> <br> Montant Tontine :  {{ u.tontine.montant }}
+                            <br><br> {% if u.status == True %}
+                                            <span class="permission-tag">En cours</span>
+                            {% else %}
+                            <span class="badge bg-danger">Terminer</span>
+                                        {% endif %}
+                        </div>
+                                       
+                    
+                        <div class="actions-section">
+                             <a href="{% url 'Backend:retournerParamettrage' session_id=u.pk %}" style="text-decoration: none" >
+
+                            <button class="btn btn-modern btn-edit" >
+                                <i class="fas fa-edit"></i>
+                                
+                                Voir cette session
+                               
+                            </button>
+                             </a>
+                        
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+           
+          
+            {% endfor %}
+        </div>
+    </div>
+    
+    
+     
+{% endblock %}

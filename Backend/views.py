@@ -1,10 +1,12 @@
 import calendar
 import datetime
+import random
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import LoginView
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
@@ -301,7 +303,7 @@ def retournerMembre(request):
     membre = Membre.objects.all()
     a = Association.objects.first()
 
-    return render(request, 'admin/liste_membre.html', context={'membres': membre, "a":a})
+    return render(request, 'admin/liste_membre.html', context={'membres': membre, "a": a})
 
 
 @method_decorator(permission_requise("création de tontine"), name='dispatch')
@@ -320,14 +322,14 @@ class CreateTontine(CreationRoleUser):
         return context
 
 
-@method_decorator(permission_requise("modification de tontine"), name='dispatch')
+@method_decorator(permission_requise("supprimer tontine"), name='dispatch')
 class SupprimerTontine(Supprimer_user):
     model = Tontine
     template_name = 'admin/tontine/Tontine.html'
     success_url = reverse_lazy('Backend:CreateTontine')
 
 
-@method_decorator(permission_requise("suppression de tontine"), name='dispatch')
+@method_decorator(permission_requise("modification de tontine"), name='dispatch')
 class ModifierTontine(ModifierUser):
     template_name = "admin/tontine/form_partial.html"
     model = Tontine
@@ -335,6 +337,7 @@ class ModifierTontine(ModifierUser):
     success_url = reverse_lazy("Backend:CreateTontine")
 
 
+@method_decorator(permission_requise("gerer session"), name='dispatch')
 class SessionListCreateView(CreateView, ListView):
     model = SessionTontine
     form_class = SessionForm
@@ -366,6 +369,7 @@ class SessionListCreateView(CreateView, ListView):
         return reverse_lazy('Backend:sessions', kwargs={'tontine_id': self.tontine.id})
 
 
+@method_decorator(permission_requise("modification de tontine"), name='dispatch')
 class SessionDeleteView(DeleteView):
     model = SessionTontine
     template_name = 'admin/tontine/sessions.html'
@@ -416,7 +420,6 @@ class CotisationListView(DetailView):
     template_name = 'admin/tontine/cotisation_list.html'
     context_object_name = 'parametrage'
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         parametrage = self.get_object()
@@ -434,10 +437,10 @@ class CotisationListView(DetailView):
         context['peut_traiter'] = self.peut_traiter_cotisations(parametrage)
         context['a'] = Association.objects.first()
         context['cotisation_terminer'] = Cotisation.objects.filter(paramettrageTontine=parametrage,
-            etat=True).order_by('date', 'membre__nom')
+                                                                   etat=True).order_by('date', 'membre__nom')
         context['cotisation_terminer_user'] = Cotisation.objects.filter(paramettrageTontine=parametrage,
-                                                                   etat=True, membre=user.membre).order_by('date',
-                                                                                                           'membre__nom')
+                                                                        etat=True, membre=user.membre).order_by('date',
+                                                                                                                'membre__nom')
 
         return context
 
@@ -458,9 +461,12 @@ class CotisationListView(DetailView):
             if not cotisations_existantes:
                 # Créer les cotisations pour tous les membres
                 for membre in parametrage.membre.all():
+                    # Si le taux est variable, ne pas définir de montant fixe
+                    montant_cotisation = None if parametrage.taux == 'variable' else parametrage.montant
+
                     Cotisation.objects.create(
                         date=prochaine_date,
-                        montant=parametrage.montant,
+                        montant=montant_cotisation,
                         membre=membre,
                         paramettrageTontine=parametrage
                     )
@@ -669,18 +675,61 @@ class CotisationListView(DetailView):
 
 
 def traiter_cotisation(request, cotisation_id, action):
-    """Traite une cotisation (succès ou échec)"""
+    """Traite une cotisation (succès ou échec) avec gestion des montants variables"""
     cotisation = get_object_or_404(Cotisation, id=cotisation_id)
     a = Association.objects.first()
 
+    # Vérifier si on peut encore traiter cette cotisation
+    if not peut_traiter_cotisation(cotisation):
+        messages.error(request, "La période de traitement de cette cotisation est terminée.")
+        return redirect('Backend:cotisation_list', pk=cotisation.paramettrageTontine.id)
+
     if action == 'reussir':
+        # Vérifier si c'est une cotisation à montant variable
+        if cotisation.paramettrageTontine.taux == 'variable':
+            # Récupérer le montant depuis les données POST
+            montant = request.POST.get('montant', '').strip()
+
+            if not montant:
+                messages.error(request, "Veuillez saisir le montant de la cotisation.")
+                return redirect('Backend:cotisation_list', pk=cotisation.paramettrageTontine.id)
+
+            try:
+                montant_float = float(montant.replace(',', '.'))
+                if montant_float <= 0:
+                    messages.error(request, "Le montant doit être positif.")
+                    return redirect('Backend:cotisation_list', pk=cotisation.paramettrageTontine.id)
+
+                # Mettre à jour le montant
+                cotisation.montant = montant_float
+
+            except ValueError:
+                messages.error(request, "Montant invalide. Veuillez saisir un nombre valide.")
+                return redirect('Backend:cotisation_list', pk=cotisation.paramettrageTontine.id)
+
         cotisation.status = True
         cotisation.etat = True
         message = f"Cotisation de {cotisation.membre} marquée comme réussie"
+
+        # Ajouter le montant dans le message si c'est variable
+        if cotisation.paramettrageTontine.taux == 'variable':
+            message += f" (Montant: {cotisation.montant:,.0f} FCFA)"
+
     elif action == 'echouer':
+        # Pour les échecs, on peut optionnellement enregistrer une raison
+        raison = request.POST.get('raison', '').strip()
+
         cotisation.status = False
         cotisation.etat = True
+
+        # Si vous avez un champ pour la raison d'échec, l'enregistrer
+        if hasattr(cotisation, 'raison_echec') and raison:
+            cotisation.raison_echec = raison
+
         message = f"Cotisation de {cotisation.membre} marquée comme échouée"
+        if raison:
+            message += f" (Raison: {raison})"
+
     else:
         messages.error(request, "Action invalide")
         return redirect('Backend:cotisation_list', pk=cotisation.paramettrageTontine.id)
@@ -696,14 +745,179 @@ def traiter_cotisation(request, cotisation_id, action):
     ).count()
 
     if cotisations_non_traitees == 0:
+        # Calculer les statistiques de la période
+        cotisations_periode = Cotisation.objects.filter(
+            paramettrageTontine=cotisation.paramettrageTontine,
+            date=cotisation.date
+        )
+
+        total_reussies = cotisations_periode.filter(status=True).count()
+        total_echouees = cotisations_periode.filter(status=False).count()
+
+        # Calculer le montant total collecté pour cette période
+        montant_total = cotisations_periode.filter(status=True).aggregate(
+            total=models.Sum('montant')
+        )['total'] or 0
+
+        messages.info(request,
+                      f"Période du {cotisation.date.strftime('%d/%m/%Y')} terminée: "
+                      f"{total_reussies} réussies, {total_echouees} échouées. "
+                      f"Montant total collecté: {montant_total:,.0f} FCFA"
+                      )
+
         # Vérifier si la session est terminée
         if timezone.now().date() >= cotisation.paramettrageTontine.dateFin:
             session = cotisation.paramettrageTontine.session
-            session.status = True
+            session.status = False
             session.save()
-            messages.info(request, "Session terminée automatiquement")
+
+            # Calculer les statistiques finales de la session
+            stats_session = calculer_statistiques_session(cotisation.paramettrageTontine)
+            messages.info(request,
+                          f"Session terminée automatiquement. "
+                          f"Statistiques finales: {stats_session}"
+                          )
 
     return redirect('Backend:cotisation_list', pk=cotisation.paramettrageTontine.id)
+
+
+def peut_traiter_cotisation(cotisation):
+    """Vérifie si une cotisation peut encore être traitée"""
+    aujourd_hui = timezone.now().date()
+
+    # Vérifier si la cotisation n'est pas déjà traitée
+    if cotisation.etat:
+        return False
+
+    # Vérifier la limite de 2 jours après la date de cotisation
+    date_limite = cotisation.date + timedelta(days=2)
+    return aujourd_hui <= date_limite
+
+
+def calculer_statistiques_session(parametrage):
+    """Calcule les statistiques d'une session de tontine"""
+    toutes_cotisations = Cotisation.objects.filter(paramettrageTontine=parametrage)
+
+    total_cotisations = toutes_cotisations.count()
+    cotisations_reussies = toutes_cotisations.filter(status=True).count()
+    cotisations_echouees = toutes_cotisations.filter(status=False).count()
+
+    montant_total = toutes_cotisations.filter(status=True).aggregate(
+        total=models.Sum('montant')
+    )['total'] or 0
+
+    taux_reussite = (cotisations_reussies / total_cotisations * 100) if total_cotisations > 0 else 0
+
+    return (
+        f"Total: {total_cotisations}, "
+        f"Réussies: {cotisations_reussies}, "
+        f"Échouées: {cotisations_echouees}, "
+        f"Taux de réussite: {taux_reussite:.1f}%, "
+        f"Montant total: {montant_total:,.0f} FCFA"
+    )
+
+
+# Fonction pour traiter plusieurs cotisations en lot
+def traiter_cotisations_lot(request, parametrage_id):
+    """Traite plusieurs cotisations en lot avec gestion des montants variables"""
+    parametrage = get_object_or_404(ParametrageTontine, id=parametrage_id)
+
+    if request.method == 'POST':
+        cotisations_ids = request.POST.getlist('cotisations_ids')
+        action = request.POST.get('action')
+
+        if not cotisations_ids:
+            messages.error(request, "Aucune cotisation sélectionnée.")
+            return redirect('Backend:cotisation_list', pk=parametrage_id)
+
+        cotisations = Cotisation.objects.filter(
+            id__in=cotisations_ids,
+            paramettrageTontine=parametrage,
+            etat=False
+        )
+
+        if action == 'reussir':
+            return traiter_cotisations_lot_reussir(request, cotisations, parametrage)
+        elif action == 'echouer':
+            return traiter_cotisations_lot_echouer(request, cotisations, parametrage)
+        else:
+            messages.error(request, "Action invalide.")
+
+    return redirect('Backend:cotisation_list', pk=parametrage_id)
+
+
+def traiter_cotisations_lot_reussir(request, cotisations, parametrage):
+    """Traite un lot de cotisations comme réussies"""
+    cotisations_traitees = 0
+    erreurs = []
+
+    for cotisation in cotisations:
+        if not peut_traiter_cotisation(cotisation):
+            erreurs.append(f"Période expirée pour {cotisation.membre}")
+            continue
+
+        # Gérer les montants variables
+        if parametrage.taux == 'variable':
+            montant_key = f'montant_{cotisation.id}'
+            montant = request.POST.get(montant_key, '').strip()
+
+            if not montant:
+                erreurs.append(f"Montant manquant pour {cotisation.membre}")
+                continue
+
+            try:
+                montant_float = float(montant.replace(',', '.'))
+                if montant_float <= 0:
+                    erreurs.append(f"Montant invalide pour {cotisation.membre}")
+                    continue
+
+                cotisation.montant = montant_float
+
+            except ValueError:
+                erreurs.append(f"Montant invalide pour {cotisation.membre}")
+                continue
+
+        cotisation.status = True
+        cotisation.etat = True
+        cotisation.save()
+        cotisations_traitees += 1
+
+    # Messages de retour
+    if cotisations_traitees > 0:
+        messages.success(request, f"{cotisations_traitees} cotisation(s) traitée(s) avec succès.")
+
+    if erreurs:
+        messages.error(request, "Erreurs: " + "; ".join(erreurs))
+
+    return redirect('Backend:cotisation_list', pk=parametrage.id)
+
+
+def traiter_cotisations_lot_echouer(request, cotisations, parametrage):
+    """Traite un lot de cotisations comme échouées"""
+    cotisations_traitees = 0
+    raison = request.POST.get('raison_echec', '').strip()
+
+    for cotisation in cotisations:
+        if not peut_traiter_cotisation(cotisation):
+            continue
+
+        cotisation.status = False
+        cotisation.etat = True
+
+        # Enregistrer la raison d'échec si le champ existe
+        if hasattr(cotisation, 'raison_echec') and raison:
+            cotisation.raison_echec = raison
+
+        cotisation.save()
+        cotisations_traitees += 1
+
+    if cotisations_traitees > 0:
+        message = f"{cotisations_traitees} cotisation(s) marquée(s) comme échouée(s)."
+        if raison:
+            message += f" Raison: {raison}"
+        messages.success(request, message)
+
+    return redirect('Backend:cotisation_list', pk=parametrage.id)
 
 
 def marquer_cotisations_automatiquement(request):
@@ -724,3 +938,173 @@ def marquer_cotisations_automatiquement(request):
         count += 1
 
     return JsonResponse({'message': f'{count} cotisations marquées automatiquement comme échec'})
+
+
+def tirage_view(request, parametrage_id):
+    """Vue principale pour le tirage - détermine le type de tirage"""
+    parametrage = get_object_or_404(ParametrageTontine, id=parametrage_id)
+
+    # Vérifier si des tirages existent déjà
+    tirages_existants = Tirage.objects.filter(paramettrageTontine=parametrage).exists()
+
+    if tirages_existants:
+        i = 0
+
+
+    # Rediriger selon le type de tirage
+    if parametrage.typeTirage.lower() == 'manuellement':
+        return redirect('Backend:tirage_manuel', parametrage_id=parametrage_id)
+    elif parametrage.typeTirage.lower() == 'aleatoire':
+        return redirect('Backend:tirage_automatique', parametrage_id=parametrage_id)
+    else:
+        return None
+
+
+def tirage_manuel(request, parametrage_id):
+    """Vue pour le tirage manuel"""
+    parametrage = get_object_or_404(ParametrageTontine, id=parametrage_id)
+    membres = parametrage.membre.all()
+    a = Association.objects.first()
+    # Vérifier si des tirages existent déjà
+    tirages_existants = Tirage.objects.filter(paramettrageTontine=parametrage)
+
+    if tirages_existants.exists():
+        messages.warning(request, "Des tirages existent déjà pour ce paramétrage.")
+        return redirect('Backend:listeTirageManuelle', parametrage_id)
+
+    context = {
+        'parametrage': parametrage,
+        'membres': membres,
+        'nombre_membres': membres.count(),
+        'numeros_disponibles': list(range(1, membres.count() + 1)),
+         "a": a,
+    }
+
+    return render(request, 'admin/tontine/tirage_manuel.html', context)
+
+
+def tirage_automatique(request, parametrage_id):
+    """Vue pour le tirage automatique"""
+    parametrage = get_object_or_404(ParametrageTontine, id=parametrage_id)
+    membres = parametrage.membre.all()
+    a = Association.objects.first()
+
+    # Vérifier si des tirages existent déjà
+    tirages_existants = Tirage.objects.filter(paramettrageTontine=parametrage)
+
+    if tirages_existants.exists():
+        messages.success(request, "Des tirages existent déjà pour ce paramétrage.")
+        return redirect('Backend:listeTirageAutomatique', parametrage_id)
+
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Créer une liste de numéros et la mélanger
+                numeros = list(range(1, membres.count() + 1))
+                random.shuffle(numeros)
+
+                # Créer les tirages
+                for i, membre in enumerate(membres):
+                    Tirage.objects.create(
+                        numero=numeros[i],
+                        membre=membre,
+                        paramettrageTontine=parametrage
+                    )
+
+                messages.success(request, "Tirage automatique effectué avec succès!")
+                return redirect('Backend:parametrage_create',session_id=parametrage.session_id)
+
+        except Exception as e:
+            messages.error(request, f"Erreur lors du tirage automatique : {str(e)}")
+
+    # Afficher la prévisualisation
+    membres_list = list(membres)
+    numeros = list(range(1, len(membres_list) + 1))
+    random.shuffle(numeros)
+
+    preview = list(zip(membres_list, numeros))
+
+    context = {
+        'parametrage': parametrage,
+        'membres': membres,
+        'nombre_membres': membres.count(),
+        'preview': preview
+        , "a": a
+    }
+
+    return render(request, 'admin/tontine/tirage_automatique.html', context)
+
+
+def sauvegarder_tirage_manuel(request, parametrage_id):
+    """Sauvegarde le tirage manuel"""
+    if request.method != 'POST':
+        return redirect('Backend:tirage_manuel', parametrage_id=parametrage_id)
+
+    parametrage = get_object_or_404(ParametrageTontine, id=parametrage_id)
+    membres = parametrage.membre.all()
+
+    # Vérifier si des tirages existent déjà
+    tirages_existants = Tirage.objects.filter(paramettrageTontine=parametrage)
+
+    if tirages_existants.exists():
+        messages.warning(request, "Des tirages existent déjà pour ce paramétrage.")
+        return redirect('Backend:parametrage_create', parametrage_id=parametrage_id)
+
+    try:
+        with transaction.atomic():
+            numeros_utilises = []
+
+            for membre in membres:
+                numero_key = f'numero_{membre.id}'
+                numero = request.POST.get(numero_key)
+
+                if not numero:
+                    messages.error(request, f"Numéro manquant pour le membre {membre.nom}")
+                    return redirect('Backend:tirage_manuel', parametrage_id=parametrage_id)
+
+                try:
+                    numero = int(numero)
+                except ValueError:
+                    messages.error(request, f"Numéro invalide pour le membre {membre.nom}")
+                    return redirect('Backend:tirage_manuel', parametrage_id=parametrage_id)
+
+                # Vérifier que le numéro est dans la plage valide
+                if numero < 1 or numero > membres.count():
+                    messages.error(request, f"Le numéro pour {membre.nom} doit être entre 1 et {membres.count()}")
+                    return redirect('Backend:tirage_manuel', parametrage_id=parametrage_id)
+
+                # Vérifier que le numéro n'est pas déjà utilisé
+                if numero in numeros_utilises:
+                    messages.error(request, f"Le numéro {numero} est déjà utilisé")
+                    return redirect('Backend:tirage_manuel', parametrage_id=parametrage_id)
+
+                numeros_utilises.append(numero)
+
+                # Créer le tirage
+                Tirage.objects.create(
+                    numero=numero,
+                    membre=membre,
+                    paramettrageTontine=parametrage
+                )
+
+            messages.success(request, "Tirage manuel sauvegardé avec succès!")
+            return redirect('Backend:parametrage_create', parametrage_id=parametrage_id)
+
+    except Exception as e:
+        messages.error(request, f"Erreur lors de la sauvegarde : {str(e)}")
+        return redirect('Backend:tirage_manuel', parametrage_id=parametrage_id)
+
+
+def listeTirageManuelle(request, parametrage_id):
+    liste = Tirage.objects.filter(paramettrageTontine_id=parametrage_id)
+    parametrage = get_object_or_404(ParametrageTontine, id=parametrage_id)
+    a = Association.objects.first()
+    membres = parametrage.membre.all()
+    return render(request, "admin/tontine/listeTirage.html", context={"listes": liste, "parametrage": parametrage, "a": a, 'nombre_membres': membres.count()})
+
+
+def listeTirageAutomatique(request, parametrage_id):
+    liste = Tirage.objects.filter(paramettrageTontine_id=parametrage_id)
+    parametrage = get_object_or_404(ParametrageTontine, id=parametrage_id)
+    membres = parametrage.membre.all()
+    return render(request, "admin/tontine/listeTirageAutomatique.html", context={"listes": liste, "parametrage": parametrage, 'nombre_membres': membres.count()})

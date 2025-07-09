@@ -1,10 +1,12 @@
 {% extends 'accueil.html' %}
- {% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
+{% load permissions_tags %}
+{% block accueil %} <a class="nav-link " href="{% url 'Backend:home' %}"><i class="fas fa-home"></i> Accueil</a>{% endblock %}
 
 {% block entete %}
                     <h5 class="mb-0">Gerer les Tontines</h5>
                     {% endblock %}
 <div style="width: 30px; height: 60px; position: relative; right: 20px; top: 15px">
+{% la_permission "admin" as droit_admin_user %}
     {% if messages %}
     <div id="notification">
         {% for message in messages %}
@@ -69,13 +71,19 @@
 
                             <button class="btn btn-modern btn-edit" >
                                 <i class="fas fa-edit"></i>
+                                {% if droit_admin_user %}
                                 Gérer cette session
+                                {% else %}
+                                Voir cette session
+                                {% endif %}
                             </button>
                              </a>
+                        {% if droit_admin_user %}
                             <button class="btn btn-modern btn-delete" data-bs-toggle="modal" data-bs-target="#deleteModal{{ u.pk }}">
                                 <i class="fas fa-trash-alt"></i>
                                 Supprimer
                             </button>
+                        {% endif %}
                             
                         </div>
                     </div>
@@ -86,7 +94,7 @@
             <div class="modal fade" id="deleteModal{{ u.pk }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ u.pk }}" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <form method="POST" action="{% url 'Backend:session_delete' u.pk %}">
+                        <form method="POST" action="{% url 'Backend:session_delete' pk=u.pk %}">
                             {% csrf_token %}
                             <div class="modal-header">
                                 <h5 class="modal-title" id="deleteModalLabel{{ u.pk }}">

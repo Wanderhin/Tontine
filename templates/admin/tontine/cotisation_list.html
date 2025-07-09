@@ -63,36 +63,173 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    {% for cotisation in cotisations %}
-                    <div class="col-md-6 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h6>{{ cotisation.membre }}</h6>
-                                <p class="mb-2">
-                                    <strong>Date :</strong> {{ cotisation.date }}<br>
-                                    <strong>Montant :</strong> {{ cotisation.montant }} FCFA
-                                </p>
-                                
-                                {% if peut_traiter %}
-                                <div class="btn-group w-100" role="group">
-                                    <a href="{% url 'Backend:traiter_cotisation' cotisation.id 'reussir' %}" 
-                                       class="btn btn-success">
-                                        ✓ Réussite
-                                    </a>
-                                    <a href="{% url 'Backend:traiter_cotisation' cotisation.id 'echouer' %}" 
-                                       class="btn btn-danger">
-                                        ✗ Échec
-                                    </a>
-                                </div>
-                                {% else %}
-                                <div class="alert alert-warning mb-0">
-                                    Période de traitement expirée
-                                </div>
-                                {% endif %}
-                            </div>
+                    <!-- Actions par lot -->
+    <!--    <div class="batch-actions">
+            <h3>Actions par lot</h3>
+            <form method="post" action="url 'Backend:traiter_cotisations_lot' parametrage.id %}">
+               
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" onclick="toggleAllCotisations()">Tout sélectionner</button>
+                    <button type="submit" name="action" value="reussir" class="btn btn-success">
+                        Marquer comme réussies
+                    </button>
+                    <button type="submit" name="action" value="echouer" class="btn btn-danger">
+                        Marquer comme échouées
+                    </button>
+                </div>
+            </form>
+        </div>-->
+
+        <!-- Liste des cotisations -->
+        {% for cotisation in cotisations %}
+            <div class="cotisation-card">
+                <div class="cotisation-header">
+                    <div>
+                        <div class="membre-info">
+                            <input type="checkbox" name="cotisations_ids" value="{{ cotisation.id }}" 
+                                   class="cotisation-checkbox" style="margin-right: 8px;">
+                            {{ cotisation.membre.nom }} {{ cotisation.membre.prenom }}
                         </div>
+                        <div class="date-info">{{ cotisation.date|date:"d/m/Y" }}</div>
                     </div>
-                    {% endfor %}
+                    <div>
+                        {% if cotisation.etat %}
+                            {% if cotisation.status %}
+                                <span class="status-badge status-success">Réussie</span>
+                            {% else %}
+                                <span class="status-badge status-failed">Échouée</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="status-badge status-pending">En attente</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if not cotisation.etat %}
+                    <div class="cotisation-actions">
+                        <!-- Formulaire pour marquer comme réussie -->
+                        <form method="post" action="{% url 'Backend:traiter_cotisation' cotisation.id 'reussir' %}" 
+                              style="display: inline-flex; gap: 8px; align-items: center;">
+                            {% csrf_token %}
+                            
+                            {% if parametrage.taux == 'variable' %}
+                                <input type="number" name="montant" class="form-control" style="width: 150px"
+                                       min="0" step="0.01" placeholder="Montant" 
+                                       value="{{ cotisation.montant|default:'' }}" required>
+                                <span>FCFA</span>
+                            {% else %}
+                                <span style="font-weight: bold; color: #28a745;">
+                                    {{ cotisation.montant|floatformat:0 }} FCFA
+                                </span>
+                            {% endif %}
+                            
+                            <button type="submit" class="btn btn-success">
+                                ✓ Réussie
+                            </button>
+                        </form>
+                        
+                        <!-- Bouton pour marquer comme échouée -->
+                        <button type="button" class="btn btn-danger" 
+                                onclick="showEchecModal({{ cotisation.id }}, '{{ cotisation.membre.nom }} {{ cotisation.membre.prenom }}')">
+                            ✗ Échouée
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="cotisation-actions">
+                        <span style="font-weight: bold;">
+                            {{ cotisation.montant|floatformat:0 }} FCFA
+                        </span>
+                        {% if cotisation.raison_echec %}
+                            <span style="color: #dc3545; font-style: italic;">
+                                ({{ cotisation.raison_echec }})
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p>Aucune cotisation à traiter.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Modal pour l'échec -->
+    <div id="echecModal" class="modal" style="">
+        <div class="modal-content">
+            <span class="close" onclick="closeEchecModal()">&times;</span>
+            <h2>Marquer comme échouée</h2>
+            <form id="echecForm" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Membre:</label>
+                    <input type="text" id="membreNom" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="raison">Raison de l'échec (optionnel):</label>
+                    <textarea id="raison" name="raison" rows="3"  class="form-control"
+                              placeholder="Précisez la raison de l'échec..."></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="button" class="btn btn-warning" onclick="closeEchecModal()">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        Confirmer l'échec
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showEchecModal(cotisationId, membreNom) {
+            document.getElementById('echecModal').style.display = 'block';
+            document.getElementById('membreNom').value = membreNom;
+            document.getElementById('echecForm').action = 
+                "{% url 'Backend:traiter_cotisation' 0 'echouer' %}".replace('0', cotisationId);
+        }
+
+        function closeEchecModal() {
+            document.getElementById('echecModal').style.display = 'none';
+            document.getElementById('raison').value = '';
+        }
+
+        function toggleAllCotisations() {
+            const checkboxes = document.querySelectorAll('.cotisation-checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+            });
+        }
+
+        // Fermer le modal si on clique à l'extérieur
+        window.onclick = function(event) {
+            const modal = document.getElementById('echecModal');
+            if (event.target === modal) {
+                closeEchecModal();
+            }
+        }
+
+        // Validation des formulaires avec montants variables
+        document.addEventListener('DOMContentLoaded', function() {
+            const forms = document.querySelectorAll('form');
+            
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    const montantInput = form.querySelector('.montant-input');
+                    if (montantInput) {
+                        const value = parseFloat(montantInput.value);
+                        if (isNaN(value) || value <= 0) {
+                            e.preventDefault();
+                            alert('Veuillez saisir un montant valide.');
+                            montantInput.focus();
+                            return false;
+                        }
+                    }
+                });
+            });
+        });
+    </script>
                 </div>
             </div>
         </div>
@@ -143,10 +280,9 @@
         </div>
     <br><br>
     
-    <div class="row">
-            <!-- Exemple de carte - Répéter pour chaque rôle -->
+    <div class="row" >
             {% for ct in cotisation_terminer %}
-            <div class="col-lg-6 col-xl-4">
+            <div class="col-lg-6 col-xl-4" style="margin-left: 10px">
                 <div class="role-card">
                     <div class="role-header">
                         <h2 class="role-title">
@@ -157,11 +293,13 @@
 
                     <div class="role-body">
                         <div class="role-description">
-                           Tontine :   {{ct.paramettrageTontine }} <br> <br> Date : {{ ct.date }} <br><br> Montant Tontine :  {{ ct.montant }}
+                           Tontine :   {{ct.paramettrageTontine }} <br> <br> Date : {{ ct.date }} <br><br> Montant Cotisation :  {{ ct.montant }}
                             <br><br> {% if ct.status == True %}
                                             <span class="permission-tag">Réussir</span>
                             {% else %}
+                            raison Echec: {{ ct.raison_echec }} <br>
                             <span class="badge bg-danger">Echouer</span>
+                            
                                         {% endif %}
                         </div>
                     

@@ -106,40 +106,27 @@
                             </ul>
                         </div>
                     </li>
-
+                    
                     <li class="nav-item">
                         {% block tontine %}
                         <a class="nav-link" href="{% url 'Backend:CreateTontine' %}">
                             <i class="fas fa-hand-holding-usd"></i>
-                            Tontines
+                           Gerer Les Tontines
                         </a>
                         {% endblock %}
                     </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-random"></i>
-                            Tirage
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-chart-line"></i>
-                            Statistiques
-                        </a>
-                    </li>
-
+                
                     <li class="nav-item">
                         <hr style="border-color: rgba(0,0,0,0.1); margin: 1rem 0;">
                     </li>
-
+                    {% block consulter %}
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link" href="{% url 'Backend:concultation_tontine' %}">
                             <i class="fas fa-cog"></i>
-                            Paramètres
+                             voir cotisations
                         </a>
                     </li>
+                    {% endblock %}
 
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'Backend:logout' %}">

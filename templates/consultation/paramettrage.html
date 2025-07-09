@@ -25,14 +25,22 @@
 {% endif %}
 </div>
 {% block tontine %}
-                        <a class="nav-link active" href="{% url 'Backend:CreateTontine' %}">
+                        <a class="nav-link " href="{% url 'Backend:CreateTontine' %}">
                             <i class="fas fa-hand-holding-usd"></i>
-                            Tontines
+                           Gerer Tontines
                         </a>
-                        {% endblock %}
+{% endblock %}
+  {% block consulter %}
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'Backend:concultation_tontine' %}">
+                            <i class="fas fa-cog"></i>
+                             voir cotisations
+                        </a>
+                    </li>
+                    {% endblock %}
 {% block remplir %}
     
-                                    <a href="{% url 'Backend:sessions' tontine_id=session.tontine_id %}" class="btn btn-secondary">
+                                    <a href="{% url 'Backend:retournerSession' tontine_id=session.tontine_id %}" class="btn btn-secondary">
                                         <i class="fas fa-arrow-left"></i> Retour
                                     </a>
     
@@ -44,25 +52,7 @@
             <strong>Session :</strong> {{ session.intitule }} de la tontine {{ session.tontine }} de {{ session.tontine.association }}
         </div>
         {% endif %}
-  {% if nbreParametrage == 0 %}  
-    <div style="position: relative; margin: auto 0; border-radius:10px; box-shadow: 5px 8px 30px rgba(0,0,0,.3); padding: 20px">
-       <div class="card-header  text-dark rounded-top-4 p-1">
-            <h4 class="mb-0 text-center">Ajouter Une Tontine</h4>
-        </div>
-        <br>
-        <form action="" method="post"  id="section">
 
-            {% csrf_token %}
-
-            {{ form.as_p }}
-
-            <button type="submit" class="btn btn-success form-control" > valider </button>
-        </form> 
-    </div>
-   {% else %}
-
-
-    {% endif %}
 
         <!-- Cards des rôles -->
         <div class="row" style="z-index: 1">
@@ -89,19 +79,26 @@
                     
                     
                         <div class="actions-section">
-                        <a href="{% url 'Backend:cotisation_list' parametrage.id %}" style="text-decoration:none">
+                        <a href="{% url 'Backend:retournerCotisation' parametrage.id %}" style="text-decoration:none">
 
                             <button class="btn btn-modern btn-edit" >
                                 <i class="fas fa-edit"></i>
-                                Gerer les Cotisations
+                                Voir les Cotisations
                             </button>
                         </a>
-                            <a href="{% url 'Backend:tirage' parametrage.id %}"
+                            {% if parametrage.typeTirage == 'aleatoire' %}
+                            <a href="{% url 'Backend:listeTirageAutomatique' parametrage.id %}"
                                                    class="btn btn-sm btn-success"
-                                                   title="Effectuer le tirage">
+                                                   title="Effectuer le tirage" style="padding:5px; width:100%;">
                                                     <i class="fas fa-dice"></i> Tirage
                             </a>
-                           
+                                {% else %}
+                                <a href="{% url 'Backend:listeTirageManuelle' parametrage.id %}"
+                                                   class="btn btn-sm btn-success"
+                                                   title="Effectuer le tirage" style="padding:5px; width:100%;">
+                                                    <i class="fas fa-dice"></i> Tirage
+                            </a>
+                           {% endif %}
                         </div>
                     </div>
                 </div>

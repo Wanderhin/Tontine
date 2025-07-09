@@ -151,6 +151,7 @@ class ParametrageTontine(models.Model):
     jourCotisation = models.CharField(max_length=15, verbose_name="Jour de cotisation", default="lundi")
     typeTirage = models.CharField(max_length=150, verbose_name="type de tirage")
     periode = models.CharField(max_length=150, verbose_name="periode de cotisation")
+    taux = models.CharField(max_length=150, verbose_name="taux de cotisation", default='fixe')
     montant = models.DecimalField(max_digits=10, decimal_places=2)
     membre = models.ManyToManyField(Membre, verbose_name="selectionner tous les Membre Adherants")
     session = models.OneToOneField(SessionTontine, on_delete=models.SET_NULL, null=True)
@@ -196,6 +197,7 @@ class Cotisation(models.Model):
     montant = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.BooleanField(default=False)
     etat = models.BooleanField(default=False)
+    raison_echec = models.CharField(max_length=150, default='aucune', blank=True)
     membre = models.ForeignKey(Membre, on_delete=models.SET_NULL, null=True)
     paramettrageTontine = models.ForeignKey(ParametrageTontine, on_delete=models.SET_NULL, null=True)
 

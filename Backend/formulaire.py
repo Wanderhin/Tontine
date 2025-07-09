@@ -8,7 +8,7 @@ tirage = (("aleatoire", "aleatoire"), ("manuellement", "manuellement"))
 periodes = (("1_semaine", "cotisation chaque semaine"), ("2_semaines", "cotisation tout les 2 semaines"), ("3_semaines", "cotisation tout les 3 semaines"),
             ("1_mois", "cotisation tout les mois"), ("3_mois", "cotisation tout les 3 mois"), ("6_mois", "cotisation tout les 6 mois"), ("1_an", "cotisation tout les ans"))
 jour = (("lundi","lundi"), ("mardi","mardi"), ("mercredi", "mercredi"), ("jeudi", "jeudi"),("vendredi", "vendredi"), ("samedi", "samedi"), ("dimanche","dimanche"))
-
+taut = (("variable","taux variable"),("fixe", "taux fixe"))
 
 class MembreForm(forms.ModelForm):
     sexe = forms.ChoiceField(choices=sexes)
@@ -112,14 +112,16 @@ class ParametrageTontineForm(forms.ModelForm):
     periode = forms.ChoiceField(choices=periodes)
     typeTirage = forms.ChoiceField(choices=tirage)
     jourCotisation = forms.ChoiceField(choices=jour)
+    taux = forms.ChoiceField(choices=taut)
 
 
     class Meta:
         model = ParametrageTontine
-        fields = ['dateDebut', 'jourCotisation', 'jourTirage', 'typeTirage', 'periode', 'montant', 'membre']
+        fields = ['dateDebut', 'jourCotisation', 'jourTirage', 'typeTirage','taux', 'periode', 'montant', 'membre']
         widgets = {
             'dateDebut': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'jourTirage': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+
         }
 
     def __init__(self, *args, **kwargs):
